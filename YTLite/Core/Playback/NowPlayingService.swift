@@ -14,7 +14,7 @@ struct NowPlayingMetadata {
 final class NowPlayingService {
     static let shared = NowPlayingService()
 
-    private weak var player: AVPlayer?
+    private weak var engine: PlayerEngine?
     private var onNextTrack: (() -> Void)?
     private var onPreviousTrack: (() -> Void)?
     private var commandTokens: [(MPRemoteCommand, Any)] = []
@@ -27,12 +27,12 @@ final class NowPlayingService {
     }
 
     func beginSession(
-        player: AVPlayer,
+        engine: PlayerEngine,
         metadata: NowPlayingMetadata,
         onNext: (() -> Void)? = nil,
         onPrevious: (() -> Void)? = nil
     ) {
-        self.player = player
+        self.engine = engine
         onNextTrack = onNext
         onPreviousTrack = onPrevious
         lastPublishedPosition = 0
@@ -53,14 +53,14 @@ final class NowPlayingService {
             return
         }
         info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = position
-        info[MPNowPlayingInfoPropertyPlaybackRate] = player?.rate ?? 0
+        info[MPNowPlayingInfoPropertyPlaybackRate] = engine?.rate ?? 0
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 
     func endSession() {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         removeCommands()
-        player = nil
+        engine = nil
         onNextTrack = nil
         onPreviousTrack = nil
         artworkURL = nil
@@ -77,7 +77,7 @@ final class NowPlayingService {
             MPMediaItemPropertyArtist: metadata.channelName,
             MPMediaItemPropertyPlaybackDuration: metadata.duration,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
-            MPNowPlayingInfoPropertyPlaybackRate: player?.rate ?? 1,
+            MPNowPlayingInfoPropertyPlaybackRate: engine?.rate ?? 1,
             MPNowPlayingInfoPropertyMediaType:
                 MPNowPlayingInfoMediaType.video.rawValue
         ]
@@ -149,18 +149,18 @@ final class NowPlayingService {
         _ center: MPRemoteCommandCenter
     ) {
         add(center.playCommand) { [weak self] _ in
-            self?.player?.play()
+            self?.engine?.play()
             return .success
         }
         add(center.pauseCommand) { [weak self] _ in
-            self?.player?.pause()
+            self?.engine?.pause()
             return .success
         }
         add(center.togglePlayPauseCommand) { [weak self] _ in
-            guard let player = self?.player else {
+            guard let engine = self?.engine else {
                 return .commandFailed
             }
-            if player.rate > 0 { player.pause() } else { player.play() }
+            if engine.isPlaying { engine.pause() } else { engine.play() }
             return .success
         }
     }
@@ -170,7 +170,7 @@ final class NowPlayingService {
     ) {
         add(center.changePlaybackPositionCommand) { [weak self] event in
             guard let ev = event as? MPChangePlaybackPositionCommandEvent,
-                  let player = self?.player
+                  let engine = self?.engine
             else {
                 return .commandFailed
             }
@@ -178,11 +178,7 @@ final class NowPlayingService {
                 seconds: ev.positionTime,
                 preferredTimescale: 1_000
             )
-            player.seek(
-                to: target,
-                toleranceBefore: .zero,
-                toleranceAfter: .zero
-            )
+            engine.seek(to: target)
             return .success
         }
     }

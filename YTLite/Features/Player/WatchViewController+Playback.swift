@@ -7,7 +7,7 @@ import UIKit
 extension WatchViewController {
     func startPlayback() {
         playbackFacade.watchtimeTracker.timeProvider = { [weak self] in
-            self?.videoPlayerView?.player?.currentTime().seconds ?? 0
+            self?.videoPlayerView?.engine?.currentTime.seconds ?? 0
         }
         playbackFacade.start(
             videoId: initialVideo.id,
@@ -23,11 +23,9 @@ extension WatchViewController {
         guard !pageLoadToken.isCancelled else {
             return
         }
-        if let saved = savedPlayerForBackground {
-            savedPlayerForBackground = nil
-            attachToExistingPlayer(
-                player: saved, item: item
-            )
+        if let saved = savedEngineForBackground {
+            savedEngineForBackground = nil
+            attachToExistingEngine(saved, item: item)
             return
         }
         resetPlaybackSurfaces()
@@ -35,33 +33,34 @@ extension WatchViewController {
         playerStatusLabel.isHidden = true
         PlaybackBufferPolicy.configure(item: item)
         startObservingPlayerItem(item)
-        let player = AVPlayer(playerItem: item)
+        let engine = AVPlayerEngine(item: item)
         PlaybackBufferPolicy.configure(
-            player: player,
+            player: engine.player,
             waitsToMinimizeStalling: minimizeStalling
         )
         let pv = getOrCreatePlayerView()
         configureSponsorBlock(on: pv)
         playerContainer.bringSubviewToFront(pv)
-        pv.attach(player: player)
+        pv.attach(engine: engine)
         // Start as soon as the first frames are decodable instead of
         // waiting for the stall-minimizing buffer to fill.
-        player.playImmediately(atRate: pv.playbackSpeed)
+        engine.playImmediately(atRate: pv.playbackSpeed)
     }
 
-    private func attachToExistingPlayer(
-        player: AVPlayer,
+    private func attachToExistingEngine(
+        _ engine: AVPlayerEngine,
         item: AVPlayerItem
     ) {
-        if let old = player.currentItem {
+        if let old = engine.player.currentItem {
             stopObservingPlayerItem(old)
         }
         PlaybackBufferPolicy.configure(item: item)
         startObservingPlayerItem(item)
-        player.replaceCurrentItem(with: item)
-        // The duration KVO binds player.currentItem — rebind after the swap.
-        videoPlayerView?.rebind(player: player)
-        player.play()
+        // The duration callback binds the current item — the engine rebinds
+        // it on replace, and the view refreshes its callbacks.
+        engine.replace(item: item)
+        videoPlayerView?.rebind(engine: engine)
+        engine.play()
     }
 
     func getOrCreatePlayerView() -> VideoPlayerView {
@@ -106,11 +105,11 @@ extension WatchViewController {
     }
 
     func beginNowPlayingSession(duration: Double) {
-        guard let player = videoPlayerView?.player else {
+        guard let engine = videoPlayerView?.engine else {
             return
         }
         NowPlayingService.shared.beginSession(
-            player: player,
+            engine: engine,
             metadata: NowPlayingMetadata(
                 title: initialVideo.title,
                 channelName: initialVideo.channelName,
@@ -127,7 +126,7 @@ extension WatchViewController {
     }
 
     func resetPlaybackSurfaces() {
-        videoPlayerView?.player?.pause()
+        videoPlayerView?.engine?.pause()
         if let existing =
             videoPlayerView?.player?.currentItem {
             stopObservingPlayerItem(existing)

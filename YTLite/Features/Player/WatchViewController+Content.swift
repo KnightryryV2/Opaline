@@ -334,7 +334,8 @@ extension WatchViewController {
         pageLoadToken = CancellationToken()
         let isBg = UIApplication.shared.applicationState != .active
         if isBg {
-            savedPlayerForBackground = videoPlayerView?.player
+            savedEngineForBackground =
+                videoPlayerView?.engine as? AVPlayerEngine
         } else {
             resetPlaybackSurfaces()
         }

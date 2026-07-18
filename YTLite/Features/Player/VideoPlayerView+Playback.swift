@@ -5,37 +5,38 @@ import UIKit
 // MARK: - Playback API
 
 extension VideoPlayerView {
-    func attach(player newPlayer: AVPlayer) {
-        player = newPlayer
+    func attach(engine newEngine: PlayerEngine) {
+        engine = newEngine
         playerLayer.isHidden = false
-        playerLayer.player = newPlayer
+        playerLayer.player = (newEngine as? AVPlayerEngine)?.player
+        bindEngineCallbacks(newEngine)
         addPeriodicObserver()
-        addPlayerObservers()
         updatePlayPauseIcon()
         setupPiP()
         if playbackSpeed != 1.0 {
-            newPlayer.rate = playbackSpeed
+            newEngine.rate = playbackSpeed
         }
     }
 
-    /// Rebinds observers after the host replaced the item on the SAME
-    /// player (background video-to-video transition): the duration KVO
-    /// watches `currentItem`, so it must re-attach to the new one. The
-    /// layer is deliberately untouched — it stays detached while
-    /// backgrounded and comes back on activation.
-    func rebind(player newPlayer: AVPlayer) {
-        player = newPlayer
-        removePlayerObservers()
-        addPlayerObservers()
+    /// Rebinds after the host replaced the item on the SAME engine
+    /// (background video-to-video transition): the duration callback watches
+    /// the current item, so the engine re-attaches it and the view refreshes
+    /// its callbacks. The layer is deliberately untouched — it stays detached
+    /// while backgrounded and comes back on activation.
+    func rebind(engine newEngine: PlayerEngine) {
+        engine = newEngine
+        bindEngineCallbacks(newEngine)
         duration = 0
     }
 
     func detach() {
         removePeriodicObserver()
-        removePlayerObservers()
+        engine?.onRateChange = nil
+        engine?.onWaitingChange = nil
+        engine?.onDurationResolved = nil
         playerLayer.isHidden = false
         playerLayer.player = nil
-        player = nil
+        engine = nil
         hideSkipButton()
         sponsorSegments = []
         seekBar.setSegments([])
@@ -84,15 +85,15 @@ extension VideoPlayerView {
     // MARK: - Periodic Observer
 
     func addPeriodicObserver() {
-        guard let player else {
+        guard let engine else {
             return
         }
         let interval = CMTime(
             seconds: 0.1,
             preferredTimescale: 600
         )
-        timeObserver = player.addPeriodicTimeObserver(
-            forInterval: interval,
+        timeObserver = engine.addPeriodicTimeObserver(
+            interval: interval,
             queue: .main
         ) { [weak self] time in
             self?.updateProgress(time: time)
@@ -101,75 +102,33 @@ extension VideoPlayerView {
 
     func removePeriodicObserver() {
         if let obs = timeObserver {
-            player?.removeTimeObserver(obs)
+            engine?.removeTimeObserver(obs)
             timeObserver = nil
         }
     }
 
-    // MARK: - Player Observers
+    // MARK: - Engine Callbacks
 
-    func addPlayerObservers() {
-        guard let player else {
-            return
+    /// Wires the engine's rate / buffering / duration signals into the UI.
+    /// The engine delivers these on the main queue.
+    func bindEngineCallbacks(_ engine: PlayerEngine) {
+        engine.onRateChange = { [weak self] in
+            self?.updatePlayPauseIcon()
         }
-        observeRate(on: player)
-        observeTimeControl(on: player)
-        observeDuration(on: player)
-    }
-
-    private func observeRate(on player: AVPlayer) {
-        rateObservation = player.observe(
-            \.rate,
-            options: [.new]
-        ) { [weak self] _, _ in
-            DispatchQueue.main.async {
-                self?.updatePlayPauseIcon()
+        engine.onWaitingChange = { [weak self] waiting in
+            if waiting {
+                self?.spinner.startAnimating()
+                self?.setCenter(hidden: true)
+            } else {
+                self?.spinner.stopAnimating()
+                self?.setCenter(hidden: false)
             }
         }
-    }
-
-    private func observeTimeControl(on player: AVPlayer) {
-        timeControlObservation = player.observe(
-            \.timeControlStatus,
-            options: [.new]
-        ) { [weak self] observed, _ in
-            DispatchQueue.main.async {
-                switch observed.timeControlStatus {
-                case .waitingToPlayAtSpecifiedRate:
-                    self?.spinner.startAnimating()
-                    self?.setCenter(hidden: true)
-                case .playing, .paused:
-                    self?.spinner.stopAnimating()
-                    self?.setCenter(hidden: false)
-                @unknown default:
-                    break
-                }
-            }
+        engine.onDurationResolved = { [weak self] secs in
+            self?.duration = secs
+            self?.durationLabel.text = formatTime(secs)
+            self?.refreshSponsorSeekBar()
         }
-    }
-
-    private func observeDuration(on player: AVPlayer) {
-        statusObservation = player.currentItem?.observe(
-            \.duration,
-            options: [.new]
-        ) { [weak self] item, _ in
-            DispatchQueue.main.async {
-                let secs = CMTimeGetSeconds(item.duration)
-                if secs.isFinite, secs > 0 {
-                    self?.duration = secs
-                    self?.durationLabel.text = formatTime(
-                        secs
-                    )
-                    self?.refreshSponsorSeekBar()
-                }
-            }
-        }
-    }
-
-    func removePlayerObservers() {
-        rateObservation = nil
-        statusObservation = nil
-        timeControlObservation = nil
     }
 
     // MARK: - Progress
@@ -188,11 +147,10 @@ extension VideoPlayerView {
     }
 
     private func updateBuffer(at time: CMTime) {
-        guard let item = player?.currentItem else {
+        guard let engine else {
             return
         }
-        let buffered = item.loadedTimeRanges
-            .compactMap { $0 as? CMTimeRange }
+        let buffered = engine.loadedTimeRanges
             .filter {
                 CMTimeRangeContainsTime($0, time: time)
             }

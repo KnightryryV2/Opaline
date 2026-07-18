@@ -29,7 +29,13 @@ final class VideoPlayerView: UIView {
     var onTimeUpdate: ((Double) -> Void)?
     var onSkipTapped: (() -> Void)?
 
-    var player: AVPlayer?
+    /// Drives playback (play/pause/seek/rate/clock). Swappable so a future
+    /// software-decode engine can replace `AVPlayer` without touching the UI.
+    var engine: PlayerEngine?
+
+    /// Bridge to the underlying `AVPlayer` for renderer-bound concerns not yet
+    /// migrated onto `PlayerEngine` (PiP, pinch-zoom, mini bar, recovery).
+    var player: AVPlayer? { (engine as? AVPlayerEngine)?.player }
 
     // MARK: - Layers
 
@@ -139,7 +145,7 @@ final class VideoPlayerView: UIView {
 
     var playbackSpeed: Float = 1.0 {
         didSet {
-            player?.rate = playbackSpeed
+            engine?.rate = playbackSpeed
             updateSpeedButtonTitle()
         }
     }
@@ -214,9 +220,6 @@ final class VideoPlayerView: UIView {
     var controlsVisible = false
     var wasPlayingOnResign = false
     var duration: Double = 0
-    var rateObservation: NSKeyValueObservation?
-    var statusObservation: NSKeyValueObservation?
-    var timeControlObservation: NSKeyValueObservation?
 
     override var safeAreaInsets: UIEdgeInsets {
         if isFullscreen && !transform.isIdentity {
