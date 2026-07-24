@@ -207,6 +207,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				"HEADER_SEARCH_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/Vendor/dav1d.xcframework/ios-arm64/Headers";
 				INFOPLIST_FILE = YTLite/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = YTLite;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -219,13 +220,16 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/Vendor/dav1d.xcframework/ios-arm64";
 				MARKETING_VERSION = 1.6.0;
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-ldav1d";
 				PRODUCT_NAME = YTLite;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "YTLite/YTLite-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -241,6 +245,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				"HEADER_SEARCH_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/Vendor/dav1d.xcframework/ios-arm64/Headers";
 				INFOPLIST_FILE = YTLite/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = YTLite;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -253,13 +258,16 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/Vendor/dav1d.xcframework/ios-arm64";
 				MARKETING_VERSION = 1.6.0;
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-ldav1d";
 				PRODUCT_NAME = YTLite;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "YTLite/YTLite-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
