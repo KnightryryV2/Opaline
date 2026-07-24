@@ -40,26 +40,25 @@ extension HomeViewController {
         ])
     }
 
-    func setChipBarHidden(_ hidden: Bool) {
-        guard isChipBarHidden != hidden else {
-            return
-        }
-        isChipBarHidden = hidden
-        UIView.animate(withDuration: 0.22) {
-            self.chipBar.alpha = hidden ? 0 : 1
-            self.chipBar.transform = hidden
-                ? CGAffineTransform(
-                    translationX: 0,
-                    y: -ChipBarView.preferredHeight
-                )
-                : .identity
-        }
+    /// Runs inside the top-bar hide/show animation — the chips slide
+    /// away together with the navigation bar.
+    func applyChipBarHidden(_ hidden: Bool) {
+        chipBar.alpha = hidden ? 0 : 1
+        chipBar.transform = hidden
+            ? CGAffineTransform(
+                translationX: 0,
+                y: -ChipBarView.preferredHeight
+            )
+            : .identity
     }
 
     func setupChipBar() {
         rebuildChips()
         chipBar.onSelect = { [weak self] index in
             self?.selectCategory(at: index)
+        }
+        topBarHider.onChange = { [weak self] hidden in
+            self?.applyChipBarHidden(hidden)
         }
         view.addSubview(chipBar)
         NSLayoutConstraint.activate([
@@ -120,16 +119,6 @@ extension HomeViewController {
         }
         showSkeleton()
         loadCategory(browseId)
-    }
-
-    private func scrollToTop() {
-        guard let cv = collectionView else {
-            return
-        }
-        cv.setContentOffset(
-            CGPoint(x: 0, y: -cv.adjustedContentInset.top),
-            animated: false
-        )
     }
 
     func showSkeleton() {

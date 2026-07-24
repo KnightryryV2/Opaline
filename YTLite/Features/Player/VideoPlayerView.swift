@@ -221,6 +221,12 @@ final class VideoPlayerView: UIView {
     var wasPlayingOnResign = false
     var duration: Double = 0
 
+    /// A mid-playback rebuffer can leave the player clock behind
+    /// the rendered media on older devices, so subtitles keyed to
+    /// `currentTime` lag by seconds until a seek realigns the
+    /// timebase (issue #14). Stall recovery schedules that seek.
+    let clockResync = ClockResyncState()
+
     override var safeAreaInsets: UIEdgeInsets {
         if isFullscreen && !transform.isIdentity {
             return .zero

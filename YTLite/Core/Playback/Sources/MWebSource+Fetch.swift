@@ -22,6 +22,32 @@ extension MWebSource {
         }
     }
 
+    /// Metadata-only probe via the IOS player client — no watch-page scrape,
+    /// STS, or pot needed (the same access path caption tracks use). The mweb
+    /// /player fetch is deferred to `selectAudioTrack`, which loads playback
+    /// starting directly on the picked track.
+    func probeAudioTracks(
+        videoId: String,
+        completion: @escaping ([AudioTrack]) -> Void
+    ) {
+        currentVideoId = videoId
+        apiClient.fetchAudioTrackList(videoId: videoId) { [weak self] infos in
+            DispatchQueue.main.async {
+                guard let self else {
+                    completion([])
+                    return
+                }
+                // The probe now races the full load (composite starts both
+                // at once): metadata-only state must never clobber real
+                // /player track state.
+                if self.info == nil {
+                    self.applyProbedTracks(infos)
+                }
+                completion(self.availableAudioTracks)
+            }
+        }
+    }
+
     func fetchPlayback(
         videoId: String,
         cancellation: CancellationToken?,
@@ -85,8 +111,10 @@ extension MWebSource {
             "mwebSource: reqVD=\((visitorData ?? "nil").prefix(24))"
                 + " respVD=\((info.visitorData ?? "nil").prefix(24))"
         )
+        // `currentAudioFormat` carries the probe-picked dub when playback
+        // starts from an audio-track selection.
         guard let video = info.dashVideoFormat,
-              let audio = info.dashAudioFormat else {
+              let audio = currentAudioFormat ?? info.dashAudioFormat else {
             loadLiveHLS(info: info, completion: completion)
             return
         }

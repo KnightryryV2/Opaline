@@ -10,7 +10,11 @@ final class ChannelTabsView: UIView {
     static let preferredHeight: CGFloat = 48
 
     let segmentedControl = UISegmentedControl(
-        items: ["Videos", "Live", "Playlists"]
+        items: [
+            "channel.tab.videos".localized,
+            "channel.tab.live".localized,
+            "channel.tab.playlists".localized
+        ]
     )
     var onTabSelected: ((Tab) -> Void)?
 

@@ -18,6 +18,15 @@ final class RotatingNavigationController: UINavigationController {
     override var childForStatusBarHidden: UIViewController? {
         topViewController
     }
+    /// Style stays with the themed bar, not the top screen: with the
+    /// bar auto-hidden on scroll the system would fall back to the
+    /// screen's default (dark text), which vanishes on dark content.
+    override var childForStatusBarStyle: UIViewController? {
+        nil
+    }
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        ThemeManager.shared.statusBarStyle
+    }
     override var prefersHomeIndicatorAutoHidden: Bool {
         topViewController?.prefersHomeIndicatorAutoHidden ?? super.prefersHomeIndicatorAutoHidden
     }
@@ -62,6 +71,7 @@ final class RotatingNavigationController: UINavigationController {
             navigationBar.barStyle = theme.barStyle
             navigationBar.titleTextAttributes = [.foregroundColor: theme.primaryText]
         }
+        setNeedsStatusBarAppearanceUpdate()
     }
 
     override func pushViewController(

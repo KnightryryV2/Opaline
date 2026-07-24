@@ -151,6 +151,9 @@ extension InnertubeClient {
             return nil
         }
         AppLog.innertube("fetching visitor data for \(videoId)...")
+        // MUST stay English regardless of the content-language setting:
+        // visitorData minting is BotGuard/fingerprint-adjacent, and the
+        // minted token must match a stable request profile.
         let headers = [
             HTTPHeader.userAgent: UserAgent.chromeDesktopPlayback,
             HTTPHeader.accept:
@@ -161,6 +164,8 @@ extension InnertubeClient {
     }
 
     func setInitialCookies() {
+        // hl=en here is part of the same stable minting profile — do NOT
+        // switch it to the content-language setting.
         let pref: [HTTPCookiePropertyKey: Any] = [
             .name: "PREF", .value: "hl=en&tz=UTC",
             .domain: ".youtube.com", .path: "/"

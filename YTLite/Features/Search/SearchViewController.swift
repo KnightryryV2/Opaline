@@ -10,7 +10,7 @@ class SearchViewController: UIViewController {
     var results: [Video] = []
     var filters = SearchFilters()
     let filtersButton = UIBarButtonItem(
-        title: "Filters", style: .plain, target: nil, action: nil
+        title: "search.filters".localized, style: .plain, target: nil, action: nil
     )
     var lastQuery: String = ""
     var activeSearchQuery: String?
@@ -26,6 +26,7 @@ class SearchViewController: UIViewController {
     let searchBar = UISearchBar()
     let tableView = UITableView()
     let refreshControl = UIRefreshControl()
+    lazy var topBarHider = TopBarAutoHider(owner: self)
 
     init(
         service: SearchService,
@@ -48,7 +49,7 @@ class SearchViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Search"
+        title = "search.title".localized
         setupFiltersButton()
         setupSearchBar()
         setupTableView()
@@ -61,9 +62,23 @@ class SearchViewController: UIViewController {
         )
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        topBarHider.showBars()
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        // The same table renders the suggestions panel — keep the top
+        // bar while the user is picking a query.
+        guard scrollView === tableView, panelMode == .hidden else {
+            return
+        }
+        topBarHider.handleScroll(scrollView)
+    }
+
     private func setupSearchBar() {
         searchBar.delegate = self
-        searchBar.placeholder = "Search YouTube"
+        searchBar.placeholder = "search.placeholder".localized
         searchBar.text = lastQuery.isEmpty ? nil : lastQuery
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(searchBar)
@@ -154,6 +169,7 @@ extension SearchViewController: UISearchBarDelegate {
     }
 
     func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+        topBarHider.showBars()
         searchBar.setShowsCancelButton(true, animated: true)
         updatePanel(for: searchBar.text ?? "")
     }

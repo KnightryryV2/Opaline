@@ -49,7 +49,9 @@ When Google dropped support for the official YouTube app on older devices, there
 - **Picture-in-Picture** — watch while using other apps
 - **SponsorBlock** — skip sponsored segments automatically
 - **Return YouTube Dislike** — see dislike counts again
+- **Audio tracks** — switch dubbed audio on multi-language videos, or start videos dubbed in your language automatically; AI auto-dubs are marked "(AI)"
 - **Subtitles** — full subtitle/caption support with VTT parsing
+- **12 languages** — localized interface, with video titles/search/feeds following your language (see [Localization](#localization))
 - **Search & browse** — live suggestions, recent-search history, filters (sort, upload date, type, duration), channel pages, playlists
 - **Smart home feed** — endless recommendations with category chips read from your feed's shelves
 - **Subscriptions** — follow channels with a local subscription feed
@@ -139,11 +141,31 @@ Install the `.ipa` package directly:
 
 ## Known Issues and Limitations
 
-- Audio track selection is not possible yet (dubbed videos play their original audio)
 - Playback speeds above 2x may cause issues
 - **Shorts** are not natively supported — they are treated as regular videos, but can be hidden from the subscriptions feed
 - Comments are displayed as a flat read-only list
 - Offline download is not yet available
+
+## Localization
+
+The interface follows your system language by default and can be overridden in **Settings → Language**. The content language (video titles, search, feeds — translated server-side by YouTube, like the official app) follows the app language; the region can be set separately.
+
+> [!NOTE]
+> All translations except English, Russian and Ukrainian were produced with LLM assistance and then review-passed — mistakes are still possible. If you spot a wrong or awkward translation, please [open an issue](../../issues) describing where it appears and what the correct wording should be. To improve a whole language (or add a new one), see [TRANSLATING.md](TRANSLATING.md).
+
+<details>
+<summary><b>Available in 12 languages</b></summary>
+<br>
+
+| | | | |
+|---|---|---|---|
+| `en` English | `ru` Русский | `uk` Українська | `de` Deutsch |
+| `es` Español | `fr` Français | `it` Italiano | `ja` 日本語 |
+| `pt` Português | `tr` Türkçe | `zh-Hans` 简体中文 | `zh-Hant` 繁體中文 |
+
+Translations for 55 more languages are prepared on the `archive/all-languages` branch — if you want one of them shipped, [open an issue](../../issues).
+
+</details>
 
 ## Playback Helper Server
 

@@ -12,13 +12,13 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .relevance:
-                return "Relevance"
+                return "search.sort.relevance".localized
             case .rating:
-                return "Rating"
+                return "search.sort.rating".localized
             case .uploadDate:
-                return "Upload date"
+                return "search.sort.uploadDate".localized
             case .viewCount:
-                return "View count"
+                return "search.sort.viewCount".localized
             }
         }
     }
@@ -34,17 +34,17 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "Any time"
+                return "search.date.any".localized
             case .lastHour:
-                return "Last hour"
+                return "search.date.lastHour".localized
             case .today:
-                return "Today"
+                return "search.date.today".localized
             case .thisWeek:
-                return "This week"
+                return "search.date.thisWeek".localized
             case .thisMonth:
-                return "This month"
+                return "search.date.thisMonth".localized
             case .thisYear:
-                return "This year"
+                return "search.date.thisYear".localized
             }
         }
     }
@@ -58,13 +58,13 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "Any type"
+                return "search.type.any".localized
             case .video:
-                return "Video"
+                return "search.type.video".localized
             case .channel:
-                return "Channel"
+                return "search.type.channel".localized
             case .playlist:
-                return "Playlist"
+                return "search.type.playlist".localized
             }
         }
     }
@@ -78,13 +78,13 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "Any duration"
+                return "search.duration.any".localized
             case .short:
-                return "Under 4 min"
+                return "search.duration.short".localized
             case .long:
-                return "Over 20 min"
+                return "search.duration.long".localized
             case .medium:
-                return "4–20 min"
+                return "search.duration.medium".localized
             }
         }
     }

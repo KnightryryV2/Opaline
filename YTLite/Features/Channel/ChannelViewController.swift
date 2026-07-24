@@ -139,7 +139,7 @@ final class ChannelViewController: VideosViewController {
     }
 
     private func configureErrorLabel() {
-        errorLabel.text = "Channel unavailable"
+        errorLabel.text = "channel.unavailable".localized
         errorLabel.textAlignment = .center
         errorLabel.numberOfLines = 0
         errorLabel.font = .systemFont(ofSize: 15)

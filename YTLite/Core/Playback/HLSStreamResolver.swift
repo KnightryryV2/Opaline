@@ -61,6 +61,9 @@ final class HLSStreamResolver {
         url: URL,
         completion: @escaping (Result<String, Error>) -> Void
     ) {
+        // MUST stay English: this fetches the watch page whose base.js/STS
+        // feed the n/sig solver — the solver pipeline expects a stable
+        // English request profile, not the content-language setting.
         let headers = [
             HTTPHeader.userAgent: desktopSafariUA,
             "Cookie": "SOCS=CAI",

@@ -74,7 +74,9 @@ extension WatchViewController {
 
     func applyThemeToSubscribeButton() {
         let theme = ThemeManager.shared
-        if subscribeButton.currentTitle == "Subscribed" {
+        // State-driven, not title-driven: the title is localized (and may
+        // even be server-provided text).
+        if isSubscribed {
             subscribeButton.backgroundColor = theme.surface
             subscribeButton.setTitleColor(theme.primaryText, for: .normal)
         } else {
@@ -93,7 +95,9 @@ extension WatchViewController {
         channelTopToDesc?.isActive = descriptionExpanded
         descriptionButton.isHidden = !hasDesc
         descriptionButton.setTitle(
-            descriptionExpanded ? "Less" : "More",
+            descriptionExpanded
+                ? "player.description.less".localized
+                : "player.description.more".localized,
             for: .normal
         )
         view.setNeedsLayout()

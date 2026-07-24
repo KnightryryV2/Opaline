@@ -1,5 +1,9 @@
 import UIKit
 
+protocol ScrollableToTop: AnyObject {
+    func scrollToTop()
+}
+
 class MainTabBarController: UITabBarController {
     private let dependencies: AppDependencies
     private weak var playerPanel: PlayerPanelViewController?
@@ -48,6 +52,7 @@ class MainTabBarController: UITabBarController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        delegate = self
         viewControllers = buildTabs()
         NotificationCenter.default.addObserver(
             self,
@@ -99,7 +104,7 @@ class MainTabBarController: UITabBarController {
             )
         )
         home.tabBarItem = UITabBarItem(
-            title: "Home",
+            title: "home.title".localized,
             image: TabBarIcons.home(),
             tag: 0
         )
@@ -112,7 +117,7 @@ class MainTabBarController: UITabBarController {
                 dependencies.makeSubscriptionsViewController()
         )
         subs.tabBarItem = UITabBarItem(
-            title: "Subscriptions",
+            title: "subscriptions.title".localized,
             image: TabBarIcons.subscriptions(),
             tag: 1
         )
@@ -126,7 +131,7 @@ class MainTabBarController: UITabBarController {
             )
         )
         library.tabBarItem = UITabBarItem(
-            title: "Library",
+            title: "library.title".localized,
             image: TabBarIcons.library(),
             tag: 2
         )
@@ -138,6 +143,13 @@ class MainTabBarController: UITabBarController {
         let theme = ThemeManager.shared
         tabBar.barStyle = theme.barStyle
         tabBar.tintColor = theme.isDark ? .white : theme.accent
+        if #available(iOS 15.0, *) {
+            let appearance = UITabBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = theme.surface
+            tabBar.standardAppearance = appearance
+            tabBar.scrollEdgeAppearance = appearance
+        }
         miniPlayerBar?.applyTheme()
     }
 
@@ -194,5 +206,26 @@ class MainTabBarController: UITabBarController {
             self?.tabBar.setNeedsLayout()
             self?.tabBar.layoutIfNeeded()
         }
+    }
+}
+
+// MARK: - UITabBarControllerDelegate
+
+extension MainTabBarController: UITabBarControllerDelegate {
+    func tabBarController(
+        _ tabBarController: UITabBarController,
+        shouldSelect viewController: UIViewController
+    ) -> Bool {
+        guard viewController === selectedViewController,
+              let nav = viewController as? UINavigationController
+        else {
+            return true
+        }
+        if nav.viewControllers.count > 1 {
+            nav.popToRootViewController(animated: true)
+        } else if let scrollable = nav.topViewController as? ScrollableToTop {
+            scrollable.scrollToTop()
+        }
+        return true
     }
 }

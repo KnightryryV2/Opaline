@@ -41,8 +41,6 @@ class HomeViewController: VideosViewController {
     var feedGeneration = 0
     /// Session-lifetime cache so tab switches don't refetch.
     var categoryCache: [String: FeedPage] = [:]
-    var isChipBarHidden = false
-    private var lastScrollY: CGFloat = 0
     lazy var chipBar = ChipBarView()
 
     override var groupsByShelf: Bool { HomeLayout.selected == .rails }
@@ -62,7 +60,7 @@ class HomeViewController: VideosViewController {
 
     lazy var errorLabel: UILabel = {
         let label = UILabel()
-        label.text = "Couldn't load feed\nPull down to retry"
+        label.text = "home.error.loadFailed".localized
         label.textColor = .lightGray
         label.textAlignment = .center
         label.numberOfLines = 0
@@ -73,7 +71,7 @@ class HomeViewController: VideosViewController {
     }()
 
     lazy var signInEmptyView: SignInEmptyStateView = {
-        let emptyView = SignInEmptyStateView(message: "Sign in to see your recommendations")
+        let emptyView = SignInEmptyStateView(message: "home.signIn".localized)
         emptyView.isHidden = true
         emptyView.onSignIn = { [weak self] in self?.toolbarOpenProfile() }
         return emptyView
@@ -98,7 +96,7 @@ class HomeViewController: VideosViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Home"
+        title = "home.title".localized
         AppLog.home("viewDidLoad")
         setupEmptyViews()
         setupChipBar()
@@ -131,21 +129,6 @@ class HomeViewController: VideosViewController {
             refreshAllFeed()
         case .feed, .placeholder:
             refreshAllFeed()
-        }
-    }
-
-    override func handleScroll(_ scrollView: UIScrollView) {
-        let top = scrollView.adjustedContentInset.top
-        let y = scrollView.contentOffset.y + top
-        defer {
-            lastScrollY = y
-        }
-        if y <= 8 {
-            setChipBarHidden(false)
-        } else if y - lastScrollY > 4 {
-            setChipBarHidden(true)
-        } else if y - lastScrollY < -4 {
-            setChipBarHidden(false)
         }
     }
 

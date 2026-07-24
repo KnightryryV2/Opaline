@@ -2,6 +2,13 @@ import AVFoundation
 import AVKit
 import UIKit
 
+/// State for the stall-recovery clock resync (issue #14).
+final class ClockResyncState {
+    var isStalled = false
+    var workItem: DispatchWorkItem?
+    var lastResync: CFTimeInterval = 0
+}
+
 // MARK: - Playback API
 
 extension VideoPlayerView {
@@ -32,8 +39,11 @@ extension VideoPlayerView {
     func detach() {
         removePeriodicObserver()
         engine?.onRateChange = nil
-        engine?.onWaitingChange = nil
+        engine?.onStateChange = nil
         engine?.onDurationResolved = nil
+        clockResync.isStalled = false
+        clockResync.workItem?.cancel()
+        clockResync.workItem = nil
         playerLayer.isHidden = false
         playerLayer.player = nil
         engine = nil
@@ -52,7 +62,7 @@ extension VideoPlayerView {
 
     func showSkipButton(categoryName: String) {
         skipButton.setTitle(
-            "Skip \(categoryName)",
+            "sponsorblock.skip".localized(with: categoryName),
             for: .normal
         )
         skipButton.isHidden = false
@@ -115,20 +125,81 @@ extension VideoPlayerView {
         engine.onRateChange = { [weak self] in
             self?.updatePlayPauseIcon()
         }
-        engine.onWaitingChange = { [weak self] waiting in
-            if waiting {
-                self?.spinner.startAnimating()
-                self?.setCenter(hidden: true)
-            } else {
-                self?.spinner.stopAnimating()
-                self?.setCenter(hidden: false)
-            }
+        engine.onStateChange = { [weak self] state in
+            self?.handleEngineStateChange(state)
         }
         engine.onDurationResolved = { [weak self] secs in
             self?.duration = secs
             self?.durationLabel.text = formatTime(secs)
             self?.refreshSponsorSeekBar()
         }
+    }
+
+    private func handleEngineStateChange(
+        _ state: PlayerEngineState
+    ) {
+        switch state {
+        case .waiting:
+            spinner.startAnimating()
+            setCenter(hidden: true)
+            if (engine?.currentTime.seconds ?? 0) > 1 {
+                clockResync.isStalled = true
+            }
+        case .playing:
+            spinner.stopAnimating()
+            setCenter(hidden: false)
+            if clockResync.isStalled {
+                clockResync.isStalled = false
+                scheduleClockResync()
+            }
+        case .paused:
+            spinner.stopAnimating()
+            setCenter(hidden: false)
+            clockResync.isStalled = false
+            clockResync.workItem?.cancel()
+        }
+    }
+
+    // MARK: - Stall Clock Resync
+
+    /// A frame-accurate seek to the current position snaps the
+    /// player clock back to the rendered media. Only runs while
+    /// subtitles are active — nothing else is precise enough to
+    /// notice the drift, and the seek costs a brief hiccup.
+    private func scheduleClockResync() {
+        guard !subtitleCues.isEmpty else {
+            return
+        }
+        clockResync.workItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.performClockResync()
+        }
+        clockResync.workItem = work
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + 1.0,
+            execute: work
+        )
+    }
+
+    private func performClockResync() {
+        guard let engine,
+              engine.state == .playing else {
+            return
+        }
+        let now = CACurrentMediaTime()
+        guard now - clockResync.lastResync > 10 else {
+            return
+        }
+        clockResync.lastResync = now
+        let time = engine.currentTime
+        AppLog.player(
+            "clock resync after stall at "
+                + String(
+                    format: "%.1fs",
+                    CMTimeGetSeconds(time)
+                )
+        )
+        engine.seek(to: time)
     }
 
     // MARK: - Progress

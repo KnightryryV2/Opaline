@@ -13,6 +13,7 @@ extension OAuthClient {
             headers: [
                 HTTPHeader.userAgent: UserAgent.cobaltTV,
                 HTTPHeader.referer: AppURLs.YouTube.tv,
+                // MUST stay en-US: OAuth device-flow fingerprint stability.
                 HTTPHeader.acceptLanguage: "en-US"
             ]
         )

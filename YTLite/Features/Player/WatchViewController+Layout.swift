@@ -2,6 +2,38 @@
 import UIKit
 
 extension WatchViewController {
+    private var actionBarItems: [ActionBarItem] {
+        [
+            ActionBarItem(
+                button: likeButton,
+                icon: "icon_thumb_up",
+                label: nil,
+                countLabel: likeCountLabel
+            ),
+            ActionBarItem(
+                button: dislikeButton,
+                icon: "icon_thumb_down",
+                label: nil,
+                countLabel: dislikeCountLabel
+            ),
+            ActionBarItem(
+                button: shareButton,
+                icon: "icon_share",
+                label: "player.action.share".localized
+            ),
+            ActionBarItem(
+                button: saveButton,
+                icon: "icon_bookmark",
+                label: "player.action.save".localized
+            ),
+            ActionBarItem(
+                button: downloadButton,
+                icon: "icon_download",
+                label: "player.action.download".localized
+            )
+        ]
+    }
+
     override func viewSafeAreaInsetsDidChange() {
         super.viewSafeAreaInsetsDidChange()
         adjustForFloatingNavBar()
@@ -22,6 +54,12 @@ extension WatchViewController {
         nc.addObserver(self, selector: #selector(applyTheme), name: tn, object: nil)
         nc.addObserver(self, selector: #selector(appDidEnterBackground), name: bg, object: nil)
         nc.addObserver(self, selector: #selector(appWillEnterForeground), name: fg, object: nil)
+        nc.addObserver(
+            self,
+            selector: #selector(audioTracksDidChange(_:)),
+            name: .sourceAudioTracksDidChange,
+            object: nil
+        )
         // On iPhone the interface is portrait-locked; handle landscape fullscreen
         // by observing raw device orientation changes instead of relying on rotation.
         if UIDevice.current.userInterfaceIdiom != .pad {
@@ -112,7 +150,7 @@ extension WatchViewController {
         [ps, sl].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
         ps.startAnimating()
         pc.addSubview(ps)
-        sl.text = "Preparing video..."
+        sl.text = "player.status.preparing".localized
         sl.textAlignment = .center
         sl.numberOfLines = 0
         sl.font = UIFont.systemFont(ofSize: 14)
@@ -143,7 +181,9 @@ extension WatchViewController {
         cv.addSubview(descriptionLabel)
         descriptionButton.titleLabel?.font = UIFont.systemFont(ofSize: 12)
         descriptionButton.addTarget(self, action: #selector(toggleDescription), for: .touchUpInside)
-        descriptionButton.setTitle("More", for: .normal)
+        descriptionButton.setTitle(
+            "player.description.more".localized, for: .normal
+        )
         cv.addSubview(descriptionButton)
     }
 
@@ -184,24 +224,7 @@ extension WatchViewController {
     }
 
     private func buildActionBarItems() {
-        let items: [ActionBarItem] = [
-            ActionBarItem(
-                button: likeButton,
-                icon: "icon_thumb_up",
-                label: nil,
-                countLabel: likeCountLabel
-            ),
-            ActionBarItem(
-                button: dislikeButton,
-                icon: "icon_thumb_down",
-                label: nil,
-                countLabel: dislikeCountLabel
-            ),
-            ActionBarItem(button: shareButton, icon: "icon_share", label: "Share"),
-            ActionBarItem(button: saveButton, icon: "icon_bookmark", label: "Save"),
-            ActionBarItem(button: downloadButton, icon: "icon_download", label: "Download")
-        ]
-        for item in items {
+        for item in actionBarItems {
             actionBar.addArrangedSubview(
                 makeActionItem(
                     btn: item.button,
@@ -250,14 +273,16 @@ extension WatchViewController {
             item.translatesAutoresizingMaskIntoConstraints = false
         }
         commentsLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        commentsLabel.text = "Comments"
+        commentsLabel.text = "player.comments.title".localized
         cv.addSubview(commentsLabel)
         commentsStackView.axis = .vertical
         commentsStackView.spacing = 12
         cv.addSubview(commentsStackView)
         loadMoreCommentsButton.contentHorizontalAlignment = .left
         loadMoreCommentsButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
-        loadMoreCommentsButton.setTitle("Load more comments", for: .normal)
+        loadMoreCommentsButton.setTitle(
+            "player.comments.loadMore".localized, for: .normal
+        )
         loadMoreCommentsButton.addTarget(
             self,
             action: #selector(loadMoreCommentsTapped),

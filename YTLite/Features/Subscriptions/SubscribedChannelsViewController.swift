@@ -4,20 +4,24 @@ import UIKit
 /// opened from the "All" button in the channel avatar bar.
 final class SubscribedChannelsViewController: UIViewController {
     private let channels: [SubscribedChannel]
+    private let newContentChannelIds: Set<String>
     private let channelViewControllerFactory: (
         String,
         String
     ) -> UIViewController
     private let tableView = UITableView()
+    private lazy var topBarHider = TopBarAutoHider(owner: self)
 
     init(
         channels: [SubscribedChannel],
+        newContentChannelIds: Set<String> = [],
         channelViewControllerFactory: @escaping (
             String,
             String
         ) -> UIViewController
     ) {
         self.channels = channels
+        self.newContentChannelIds = newContentChannelIds
         self.channelViewControllerFactory = channelViewControllerFactory
         super.init(nibName: nil, bundle: nil)
     }
@@ -29,7 +33,7 @@ final class SubscribedChannelsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "All subscriptions"
+        title = "subscriptions.all".localized
         setupTableView()
         applyTheme()
         NotificationCenter.default.addObserver(
@@ -38,6 +42,18 @@ final class SubscribedChannelsViewController: UIViewController {
             name: ThemeManager.didChangeNotification,
             object: nil
         )
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        topBarHider.showBars()
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView === tableView else {
+            return
+        }
+        topBarHider.handleScroll(scrollView)
     }
 
     @objc
@@ -86,7 +102,11 @@ extension SubscribedChannelsViewController: UITableViewDataSource {
         ) as? SubscribedChannelCell else {
             return UITableViewCell()
         }
-        cell.configure(with: channels[indexPath.row])
+        let channel = channels[indexPath.row]
+        cell.configure(
+            with: channel,
+            showsNewContentDot: newContentChannelIds.contains(channel.id)
+        )
         return cell
     }
 }
@@ -112,6 +132,7 @@ private final class SubscribedChannelCell: UITableViewCell {
 
     private let avatarView = ChannelAvatarView()
     private let nameLabel = UILabel()
+    private let dotView = NewContentDotView()
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -127,11 +148,16 @@ private final class SubscribedChannelCell: UITableViewCell {
         super.prepareForReuse()
         avatarView.reset()
         nameLabel.text = nil
+        dotView.isHidden = true
     }
 
-    func configure(with channel: SubscribedChannel) {
+    func configure(
+        with channel: SubscribedChannel,
+        showsNewContentDot: Bool
+    ) {
         avatarView.configure(with: channel)
         nameLabel.text = channel.title
+        dotView.isHidden = !showsNewContentDot
         applyTheme()
     }
 
@@ -141,6 +167,7 @@ private final class SubscribedChannelCell: UITableViewCell {
         contentView.backgroundColor = theme.background
         nameLabel.textColor = theme.primaryText
         avatarView.applyTheme()
+        dotView.applyTheme()
     }
 
     private func setupLayout() {
@@ -150,6 +177,8 @@ private final class SubscribedChannelCell: UITableViewCell {
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(avatarView)
         contentView.addSubview(nameLabel)
+        contentView.addSubview(dotView)
+        dotView.constrainToTopRight(of: avatarView)
         NSLayoutConstraint.activate([
             avatarView.leadingAnchor.constraint(
                 equalTo: contentView.leadingAnchor,

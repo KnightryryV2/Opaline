@@ -2,6 +2,15 @@ import AVFoundation
 
 // MARK: - PlayerEngine
 
+/// Coarse transport state, mirroring `AVPlayer.timeControlStatus`: `waiting`
+/// means playback wants to advance but is buffering (a stall, from the UI's
+/// point of view).
+enum PlayerEngineState {
+    case playing
+    case paused
+    case waiting
+}
+
 /// The playback transport + clock the player shell drives, abstracted away from
 /// `AVPlayer`. Phase 1 ships one implementation, `AVPlayerEngine`; a later phase
 /// adds a sample-buffer engine for software-decoded AV1. The shell only ever
@@ -20,13 +29,15 @@ protocol PlayerEngine: AnyObject {
     var duration: CMTime { get }
     /// Buffered ranges, for the seek bar's buffer fill.
     var loadedTimeRanges: [CMTimeRange] { get }
+    /// Current transport state (playing / paused / waiting-to-buffer).
+    var state: PlayerEngineState { get }
 
     /// Fires (on the main queue) when the play/pause state changes — drives the
     /// play/pause icon.
     var onRateChange: (() -> Void)? { get set }
-    /// Fires (on the main queue) when buffering state changes: `true` = waiting
-    /// to play, so the shell shows the spinner.
-    var onWaitingChange: ((Bool) -> Void)? { get set }
+    /// Fires (on the main queue) whenever `state` changes — drives the
+    /// buffering spinner and the stall-recovery clock resync.
+    var onStateChange: ((PlayerEngineState) -> Void)? { get set }
     /// Fires (on the main queue) once the item duration resolves to a finite
     /// value.
     var onDurationResolved: ((Double) -> Void)? { get set }

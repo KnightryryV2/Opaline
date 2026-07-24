@@ -50,6 +50,7 @@ extension SubscriptionsViewController {
         }
         channelBar.setChannels(channels)
         channelBar.setSelectedChannelId(selectedChannel?.id)
+        refreshNewContentDots()
         if tableView.tableHeaderView !== channelBar {
             channelBar.frame = CGRect(
                 x: 0,

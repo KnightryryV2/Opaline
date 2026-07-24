@@ -12,6 +12,26 @@ enum AppURLs {
         static func thumbnailURL(videoId: String) -> String {
             "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
         }
+
+        /// Public per-channel Atom feed (unauthenticated, last ~15
+        /// uploads with exact publish dates). Powers the new-content
+        /// dots without touching the relevance-ranked subscriptions feed.
+        static func channelRSSFeedURL(channelId: String) -> URL? {
+            URL(string: base + "/feeds/videos.xml?channel_id=" + channelId)
+        }
+
+        /// Same Atom feed restricted to long-form uploads via the
+        /// undocumented `UULF` system playlist (Shorts excluded). nil
+        /// for non-`UC` channel ids — callers fall back to the full feed.
+        static func channelLongFormRSSFeedURL(channelId: String) -> URL? {
+            guard channelId.hasPrefix("UC") else {
+                return nil
+            }
+            let playlistId = "UULF" + channelId.dropFirst(2)
+            return URL(
+                string: base + "/feeds/videos.xml?playlist_id=" + playlistId
+            )
+        }
     }
 
     enum YouTubeOAuth {
@@ -83,11 +103,14 @@ enum AppURLs {
                 URLQueryItem(name: "oe", value: "utf-8"),
                 URLQueryItem(name: "q", value: query)
             ]
-            if let language = Locale.current.languageCode {
-                items.append(
-                    URLQueryItem(name: "hl", value: language)
+            // Follows the content-language setting (not the device locale)
+            // so suggestions match what feeds/search return.
+            items.append(
+                URLQueryItem(
+                    name: "hl",
+                    value: InnertubeContexts.localePreferences.hl
                 )
-            }
+            )
             components?.queryItems = items
             return components?.url
         }

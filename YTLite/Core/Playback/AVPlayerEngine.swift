@@ -12,7 +12,7 @@ final class AVPlayerEngine: PlayerEngine {
     let player: AVPlayer
 
     var onRateChange: (() -> Void)?
-    var onWaitingChange: ((Bool) -> Void)?
+    var onStateChange: ((PlayerEngineState) -> Void)?
     var onDurationResolved: ((Double) -> Void)?
 
     private var rateObservation: NSKeyValueObservation?
@@ -34,10 +34,29 @@ final class AVPlayerEngine: PlayerEngine {
             .compactMap { $0 as? CMTimeRange }
     }
 
+    var state: PlayerEngineState {
+        Self.engineState(from: player.timeControlStatus)
+    }
+
     init(item: AVPlayerItem) {
         player = AVPlayer(playerItem: item)
         observeDuration(of: item)
         observePlayer()
+    }
+
+    private static func engineState(
+        from status: AVPlayer.TimeControlStatus
+    ) -> PlayerEngineState {
+        switch status {
+        case .playing:
+            return .playing
+        case .waitingToPlayAtSpecifiedRate:
+            return .waiting
+        case .paused:
+            return .paused
+        @unknown default:
+            return .paused
+        }
     }
 
     // MARK: PlayerEngine
@@ -108,9 +127,8 @@ final class AVPlayerEngine: PlayerEngine {
             \.timeControlStatus,
             options: [.new]
         ) { [weak self] observed, _ in
-            let waiting =
-                observed.timeControlStatus == .waitingToPlayAtSpecifiedRate
-            DispatchQueue.main.async { self?.onWaitingChange?(waiting) }
+            let state = Self.engineState(from: observed.timeControlStatus)
+            DispatchQueue.main.async { self?.onStateChange?(state) }
         }
     }
 

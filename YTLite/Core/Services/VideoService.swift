@@ -215,6 +215,12 @@ protocol WatchService: AnyObject {
         videoId: String,
         completion: @escaping ([SubtitleTrack]) -> Void
     )
+    /// Audio-track (dub) metadata via the IOS player client — the cheapest
+    /// reliable listing (no STS, pot, or watch-page scrape needed).
+    func fetchAudioTrackList(
+        videoId: String,
+        completion: @escaping ([AudioTrackInfo]) -> Void
+    )
 }
 
 protocol EngagementService: AnyObject {

@@ -29,7 +29,7 @@ final class SignInEmptyStateView: UIView {
 
     private let signInButton: UIButton = {
         let btn = UIButton(type: .system)
-        btn.setTitle("Sign In", for: .normal)
+        btn.setTitle("account.signIn".localized, for: .normal)
         btn.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         btn.backgroundColor = ThemeManager.shared.accent
         btn.setTitleColor(.white, for: .normal)

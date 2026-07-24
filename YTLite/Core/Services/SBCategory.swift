@@ -6,8 +6,6 @@ import UIKit
 /// Adding a category = adding one entry to
 /// `SBCategory.catalog`.
 private struct SBCategoryDefinition {
-    let displayName: String
-    let description: String
     let seekBarColor: UIColor
     let defaultSkipBehavior: SBSkipBehavior
     /// Whether auto-skip is valid for this category.
@@ -16,15 +14,11 @@ private struct SBCategoryDefinition {
     let canShowButton: Bool
 
     init(
-        _ name: String,
-        _ desc: String,
         _ hex: String,
         behavior: SBSkipBehavior = .disabled,
         canAutoSkip: Bool = true,
         canShowButton: Bool = true
     ) {
-        displayName         = name
-        description         = desc
         seekBarColor        = UIColor(sbHex: hex)
         defaultSkipBehavior = behavior
         self.canAutoSkip    = canAutoSkip
@@ -49,91 +43,26 @@ enum SBCategory: String, CaseIterable {
 
     // MARK: Catalog
 
-    // swiftlint:disable closure_body_length
     private static let catalog: [SBCategory: SBCategoryDefinition] = {
         typealias Def = SBCategoryDefinition
         return [
-            .sponsor: Def(
-                "Sponsor",
-                "Paid promotion, paid referrals and direct advertisements."
-                    + " Not for self-promotion or free shoutouts to"
-                    + " causes/creators/websites/products they like.",
-                "#00d400",
-                behavior: .autoSkip
-            ),
-            .selfpromo: Def(
-                "Unpaid/Self Promotion",
-                "Similar to \"sponsor\" except for unpaid or self promotion."
-                    + " This includes sections about merchandise, donations,"
-                    + " or information about who they collaborated with.",
-                "#ffff00"
-            ),
+            .sponsor: Def("#00d400", behavior: .autoSkip),
+            .selfpromo: Def("#ffff00"),
             .exclusiveAccess: Def(
-                "Exclusive Access",
-                "Only for labeling entire videos. Used when a video"
-                    + " showcases a product, service or location that"
-                    + " they've received free or subsidized access to.",
-                "#008000",
-                canAutoSkip: false,
-                canShowButton: false
+                "#008000", canAutoSkip: false, canShowButton: false
             ),
-            .interaction: Def(
-                "Interaction Reminder (Subscribe)",
-                "When there is a short reminder to like, subscribe or follow"
-                    + " in the middle of content. If it is long or about"
-                    + " something specific, it should be under self promotion"
-                    + " instead.",
-                "#cc00ff"
-            ),
-            .highlight: Def(
-                "Highlight",
-                "The part of the video that most people are looking for."
-                    + " Similar to \"Video starts at x\" comments.",
-                "#ff1684"
-            ),
-            .intro: Def(
-                "Intermission/Intro Animation",
-                "An interval without actual content. Could be a pause,"
-                    + " static frame, or repeating animation. This should"
-                    + " not be used for transitions containing information.",
-                "#00ffff"
-            ),
-            .outro: Def(
-                "Endcards/Credits",
-                "Credits or when the YouTube endcards appear."
-                    + " Not for conclusions with information.",
-                "#0202ed"
-            ),
-            .preview: Def(
-                "Preview/Recap",
-                "Collection of clips that show what is coming up in this"
-                    + " video or other videos in a series where all"
-                    + " information is repeated later in the video.",
-                "#008fd6"
-            ),
-            .filler: Def(
-                "Tangents/Jokes",
-                "Tangential scenes or jokes that are not required to"
-                    + " understand the main content of the video. This should"
-                    + " not include segments providing context or background"
-                    + " details.",
-                "#7300ab"
-            ),
-            .musicOfftopic: Def(
-                "Non-Music Section",
-                "Only for music videos. Non-music part of a music video.",
-                "#ff9900"
-            ),
+            .interaction: Def("#cc00ff"),
+            .highlight: Def("#ff1684"),
+            .intro: Def("#00ffff"),
+            .outro: Def("#0202ed"),
+            .preview: Def("#008fd6"),
+            .filler: Def("#7300ab"),
+            .musicOfftopic: Def("#ff9900"),
             .chapter: Def(
-                "Chapter",
-                "Custom named sections of the video.",
-                "#feff01",
-                canAutoSkip: false,
-                canShowButton: false
+                "#feff01", canAutoSkip: false, canShowButton: false
             )
         ]
     }()
-    // swiftlint:enable closure_body_length
 
     // MARK: Derived properties
 
@@ -144,8 +73,14 @@ enum SBCategory: String, CaseIterable {
         return definition
     }
 
-    var displayName: String { info.displayName }
-    var categoryDescription: String { info.description }
+    /// Name/description come from Localizable.strings, keyed by rawValue —
+    /// the catalog only carries non-translatable attributes.
+    var displayName: String {
+        "sponsorblock.category.\(rawValue).name".localized
+    }
+    var categoryDescription: String {
+        "sponsorblock.category.\(rawValue).description".localized
+    }
     var seekBarColor: UIColor { info.seekBarColor }
     var defaultSkipBehavior: SBSkipBehavior { info.defaultSkipBehavior }
     var canAutoSkip: Bool { info.canAutoSkip }
@@ -162,11 +97,11 @@ enum SBSkipBehavior: String {
     var displayName: String {
         switch self {
         case .autoSkip:
-            return "Auto skip"
+            return "sponsorblock.behavior.autoSkip".localized
         case .showButton:
-            return "Show button"
+            return "sponsorblock.behavior.showButton".localized
         case .disabled:
-            return "Disable"
+            return "sponsorblock.behavior.disabled".localized
         }
     }
 

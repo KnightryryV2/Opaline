@@ -33,7 +33,7 @@ extension WatchViewController {
         channelMetaLabel.text = nil
         subscribeButton.isHidden =
             !OAuthClient.shared.isAnonymous
-        subscribeButton.setTitle("Subscribe", for: .normal)
+        subscribeButton.setTitle("common.subscribe".localized, for: .normal)
         descriptionLabel.text = nil
         descriptionButton.isHidden = true
         resetComments()
@@ -158,7 +158,8 @@ extension WatchViewController {
     func applySubscriptionState(from page: WatchPage) {
         let buttonText = page.subscribeButtonText
             ?? (page.isSubscribed
-                ? "Subscribed" : "Subscribe")
+                ? "common.subscribed".localized
+                : "common.subscribe".localized)
         subscribeButton.setTitle(
             buttonText,
             for: .normal

@@ -73,7 +73,9 @@ extension WatchViewController {
             )
             isSubscribed = wasSubscribed
             subscribeButton.setTitle(
-                wasSubscribed ? "Subscribed" : "Subscribe",
+                wasSubscribed
+                    ? "common.subscribed".localized
+                    : "common.subscribe".localized,
                 for: .normal
             )
             applyTheme()
@@ -89,7 +91,9 @@ extension WatchViewController {
         let wasSubscribed = isSubscribed
         isSubscribed = !wasSubscribed
         subscribeButton.setTitle(
-            isSubscribed ? "Subscribed" : "Subscribe",
+            isSubscribed
+                ? "common.subscribed".localized
+                : "common.subscribe".localized,
             for: .normal
         )
         subscribeButton.isEnabled = false

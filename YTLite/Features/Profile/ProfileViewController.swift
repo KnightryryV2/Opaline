@@ -8,7 +8,9 @@ class ProfileViewController: UIViewController {
     private let subscribersLabel = UILabel()
 
     // Theme section
-    private let themeSegment = UISegmentedControl(items: ["Dark", "Light"])
+    private let themeSegment = UISegmentedControl(items: [
+        "settings.theme.dark".localized, "settings.theme.light".localized
+    ])
     private let clearImageCacheButton = UIButton(type: .system)
     private let themeTitleLabel = UILabel()
     private let separatorLine = UIView()
@@ -18,7 +20,7 @@ class ProfileViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Profile"
+        title = "profile.title".localized
         setupUI()
         applyTheme()
         NotificationCenter.default.addObserver(
@@ -29,7 +31,7 @@ class ProfileViewController: UIViewController {
         )
         loadProfile()
         navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Sign Out",
+            title: "profile.signOut".localized,
             style: .plain,
             target: self,
             action: #selector(signOut)
@@ -74,7 +76,7 @@ class ProfileViewController: UIViewController {
     }
 
     private func setupControlViews() {
-        themeTitleLabel.text = "Theme"
+        themeTitleLabel.text = "settings.row.theme".localized
         themeTitleLabel.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
         themeTitleLabel.textColor = UIColor(white: 0.5, alpha: 1)
         themeTitleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -85,7 +87,9 @@ class ProfileViewController: UIViewController {
         themeSegment.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(themeSegment)
 
-        clearImageCacheButton.setTitle("Clear Image Cache", for: .normal)
+        clearImageCacheButton.setTitle(
+            "profile.clearImageCache".localized, for: .normal
+        )
         clearImageCacheButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         clearImageCacheButton.layer.cornerRadius = 10
         let cacheInsets = UIEdgeInsets(top: 12, left: 18, bottom: 12, right: 18)
@@ -158,11 +162,13 @@ class ProfileViewController: UIViewController {
         ThumbnailImageView.clearCache()
 
         let alert = UIAlertController(
-            title: "Done",
-            message: "Image cache cleared.",
+            title: "common.done".localized,
+            message: "profile.imageCacheCleared".localized,
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        alert.addAction(
+            UIAlertAction(title: "common.ok".localized, style: .default)
+        )
         present(alert, animated: true)
     }
 

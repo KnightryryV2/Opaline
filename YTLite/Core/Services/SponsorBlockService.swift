@@ -16,9 +16,9 @@ struct SponsorBlockSegment {
 final class SponsorBlockService {
     static let shared = SponsorBlockService()
     static let attributionURL = AppURLs.SponsorBlock.api
-    static let attributionText =
-        "Powered by SponsorBlock (sponsor.ajay.app)"
-        + " — an open community project."
+    static var attributionText: String {
+        "sponsorblock.attribution".localized
+    }
 
     static var enabled: Bool {
         get {

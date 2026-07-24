@@ -29,9 +29,9 @@ enum HomeLayout: String, CaseIterable {
     var displayName: String {
         switch self {
         case .grid:
-            return "Plain Grid"
+            return "settings.homeLayout.grid".localized
         case .rails:
-            return "Shelf Rails"
+            return "settings.homeLayout.rails".localized
         }
     }
 }

@@ -1,10 +1,12 @@
 import UIKit
 
-class SubscriptionsViewController: UIViewController {
+class SubscriptionsViewController: UIViewController, ScrollableToTop {
     static let skeletonCount = 6
     let service: FeedService
     let channelTabsService: ChannelTabService
     let channelsService: SubscribedChannelsService
+    let historyService: HistoryService
+    let channelRSSService: ChannelRSSFeedService
     let cache: AppCache
     let channelViewControllerFactory: (
         String,
@@ -26,6 +28,15 @@ class SubscriptionsViewController: UIViewController {
     var stashedSeenVideoIds: Set<String> = []
     var isLoadingInitial = true
     var signInPrompt: SignInEmptyStateView?
+    lazy var topBarHider = TopBarAutoHider(owner: self)
+    // New-content dots (issue #13): derived state, never persisted.
+    var newContentChannelIds: Set<String> = []
+    var newContentUploads: [String: [RSSVideoEntry]] = [:]
+    var newContentHistoryIds: Set<String>?
+    var newContentHistoryFetchedAt: Date?
+    var isLoadingNewContentHistory = false
+    var isLoadingNewContentRSS = false
+    var locallyWatchedVideoIds: Set<String> = []
 
     init(
         dependencies: AppDependencies,
@@ -35,6 +46,8 @@ class SubscriptionsViewController: UIViewController {
         service = dependencies.feedService
         channelTabsService = dependencies.channelTabService
         channelsService = dependencies.subscribedChannelsService
+        historyService = dependencies.historyService
+        channelRSSService = dependencies.channelRSSService
         channelViewControllerFactory = dependencies.makeChannelViewController
         self.cache = cache
         self.videoRouter = videoRouter
@@ -48,7 +61,7 @@ class SubscriptionsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Subscriptions"
+        title = "subscriptions.title".localized
         AppLog.subs("viewDidLoad")
         setupTableView()
         setupSpinner()
@@ -77,6 +90,24 @@ class SubscriptionsViewController: UIViewController {
         updateChannelBarFrame()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        refreshNewContentDots()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        topBarHider.showBars()
+    }
+
+    func scrollToTop() {
+        topBarHider.showBars()
+        tableView.setContentOffset(
+            CGPoint(x: 0, y: -tableView.adjustedContentInset.top),
+            animated: true
+        )
+    }
+
     @objc
     func applyTheme() {
         let theme = ThemeManager.shared
@@ -103,6 +134,8 @@ class SubscriptionsViewController: UIViewController {
     func handleShowShortsChange() {
         cache.clearSubscriptionsFeed()
         loadFeed()
+        newContentUploads = [:]
+        refreshNewContentDots()
     }
 }
 
@@ -144,11 +177,19 @@ extension SubscriptionsViewController: UITableViewDataSource {
 }
 
 extension SubscriptionsViewController: UITableViewDelegate {
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView === tableView else {
+            return
+        }
+        topBarHider.handleScroll(scrollView)
+    }
+
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard !isLoadingInitial else {
             return
         }
         let video = videos[indexPath.row]
+        markWatchedLocally(video)
         videoRouter.open(video: video, from: self)
     }
 

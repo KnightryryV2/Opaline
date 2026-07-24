@@ -18,7 +18,7 @@ extension SearchViewController: UITableViewDataSource {
         titleForHeaderInSection section: Int
     ) -> String? {
         panelMode == .history && !panelItems.isEmpty
-            ? "Recent searches"
+            ? "search.recent".localized
             : nil
     }
 

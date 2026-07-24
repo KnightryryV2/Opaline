@@ -32,35 +32,11 @@ enum VideoFormatters {
 
     /// Approximates a Date from a relative time string like "2 hours ago" / "3 дня назад".
     /// Returns nil if not parseable.
+    /// Delegates to ContentKeywords (Core/Localization) — per-language
+    /// unit tables; unknown languages return nil (callers degrade to
+    /// server order / conservative windows).
     static func approximateDate(fromRelative text: String) -> Date? {
-        let lowered = text.lowercased()
-        let num = lowered.components(separatedBy: .whitespaces)
-            .compactMap(Int.init).first ?? 1
-        let now = Date()
-        if lowered.contains("sec") || lowered.contains("сек") {
-            return now - Double(num)
-        }
-        if lowered.contains("min") || lowered.contains("мин") {
-            return now - Double(num) * 60
-        }
-        if lowered.contains("hour") || lowered.contains("час") {
-            return now - Double(num) * 3_600
-        }
-        if lowered.contains("day") || lowered.contains("дн")
-            || lowered.contains("день") || lowered.contains("дня") {
-            return now - Double(num) * 86_400
-        }
-        if lowered.contains("week") || lowered.contains("нед") {
-            return now - Double(num) * 604_800
-        }
-        if lowered.contains("month") || lowered.contains("мес") {
-            return now - Double(num) * 2_592_000
-        }
-        if lowered.contains("year") || lowered.contains("лет")
-            || lowered.contains("год") {
-            return now - Double(num) * 31_536_000
-        }
-        return nil
+        ContentKeywords.approximateDate(fromRelative: text)
     }
 
     static func parseDuration(_ iso: String) -> String {

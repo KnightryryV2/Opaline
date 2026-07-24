@@ -93,9 +93,9 @@ extension WatchViewController: UICollectionViewDataSource {
             ) as? PlaylistSectionHeaderView
             ?? PlaylistSectionHeaderView()
         let title: String = if indexPath.section == 0 {
-            queue.playlistTitle ?? "Mix"
+            queue.playlistTitle ?? "player.related.mix".localized
         } else {
-            "Related"
+            "player.related.title".localized
         }
         header.configure(
             title: title,

@@ -25,6 +25,7 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
           RELEASE_ID: ${{ github.event.release.id }}
           PUBLISHED_AT: ${{ github.event.release.published_at }}
+          RELEASE_TITLE: ${{ github.event.release.name }}
         run: |
           ASSET=$(gh api "repos/${{ github.repository }}/releases/$RELEASE_ID" \
             --jq '.assets[] | select(.name | endswith(".ipa")) | "\(.browser_download_url) \(.size)"' \
@@ -43,7 +44,8 @@ jobs:
             --download-url "$URL" \
             --size "$SIZE" \
             --date "$PUBLISHED_AT" \
-            --notes-file "$NOTES_FILE"
+            --notes-file "$NOTES_FILE" \
+            --release-title "$RELEASE_TITLE"
 
       - name: Commit and push
         env:

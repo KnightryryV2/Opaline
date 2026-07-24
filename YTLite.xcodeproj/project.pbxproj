@@ -108,6 +108,17 @@
 			knownRegions = (
 				en,
 				Base,
+				ru,
+				uk,
+				de,
+				es,
+				fr,
+				ja,
+				pt,
+				tr,
+				"zh-Hans",
+				it,
+				"zh-Hant",
 			);
 			mainGroup = 4940A7162F6AD27900E6C599;
 			minimizedProjectReferenceProxies = 1;
@@ -208,7 +219,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.6.0;
 				PRODUCT_NAME = YTLite;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -242,7 +253,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.6.0;
 				PRODUCT_NAME = YTLite;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

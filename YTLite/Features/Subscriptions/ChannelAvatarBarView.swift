@@ -28,6 +28,7 @@ final class ChannelAvatarBarView: UIView {
     private let separator = UIView()
     private var items: [ChannelAvatarItemView] = []
     private var selectedChannelId: String?
+    private var newContentChannelIds: Set<String> = []
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -50,11 +51,17 @@ final class ChannelAvatarBarView: UIView {
         }
         items.forEach { stack.addArrangedSubview($0) }
         applySelection()
+        applyNewContentDots()
     }
 
     func setSelectedChannelId(_ id: String?) {
         selectedChannelId = id
         applySelection()
+    }
+
+    func setNewContentChannelIds(_ ids: Set<String>) {
+        newContentChannelIds = ids
+        applyNewContentDots()
     }
 
     func applyTheme() {
@@ -69,6 +76,14 @@ final class ChannelAvatarBarView: UIView {
     private func applySelection() {
         for item in items {
             item.setSelected(item.channel.id == selectedChannelId)
+        }
+    }
+
+    private func applyNewContentDots() {
+        for item in items {
+            item.setShowsNewContent(
+                newContentChannelIds.contains(item.channel.id)
+            )
         }
     }
 
@@ -111,7 +126,7 @@ final class ChannelAvatarBarView: UIView {
     }
 
     private func setupAllButton() {
-        allButton.setTitle("All", for: .normal)
+        allButton.setTitle("subscriptions.allButton".localized, for: .normal)
         allButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .medium)
         allButton.contentEdgeInsets = UIEdgeInsets(
             top: 8, left: 12, bottom: 8, right: 16
@@ -143,6 +158,7 @@ private final class ChannelAvatarItemView: UIControl {
     private let ringView = UIView()
     private let avatarView = ChannelAvatarView()
     private let nameLabel = UILabel()
+    private let dotView = NewContentDotView()
     private var isRingSelected = false
 
     init(channel: SubscribedChannel) {
@@ -167,8 +183,13 @@ private final class ChannelAvatarItemView: UIControl {
         applyNameColor()
     }
 
+    func setShowsNewContent(_ shows: Bool) {
+        dotView.isHidden = !shows
+    }
+
     func applyTheme() {
         avatarView.applyTheme()
+        dotView.applyTheme()
         applyNameColor()
     }
 
@@ -219,6 +240,8 @@ private final class ChannelAvatarItemView: UIControl {
         addSubview(ringView)
         avatarView.configure(with: channel)
         addSubview(avatarView)
+        addSubview(dotView)
+        dotView.constrainToTopRight(of: avatarView)
         NSLayoutConstraint.activate([
             ringView.widthAnchor.constraint(equalToConstant: ring),
             ringView.heightAnchor.constraint(equalToConstant: ring),

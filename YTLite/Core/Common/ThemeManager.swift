@@ -22,6 +22,9 @@ class ThemeManager {
     private(set) var durationBackground: UIColor = UIColor.black.withAlphaComponent(0.8)
     private(set) var liveBadgeBackground: UIColor = UIColor(red: 1, green: 0, blue: 0, alpha: 0.9)
     private(set) var thumbnailPlaceholder: UIColor = UIColor(white: 0.15, alpha: 1)
+    private(set) var newContentDot: UIColor = UIColor(
+        red: 62 / 255, green: 166 / 255, blue: 1, alpha: 1
+    )
     private(set) var skeletonBase: UIColor    = UIColor(white: 0.13, alpha: 1)
     private(set) var skeletonShimmer: UIColor = UIColor(white: 0.22, alpha: 1)
     private(set) var skeletonBlock: UIColor   = UIColor(white: 0.18, alpha: 1)
@@ -193,6 +196,9 @@ class ThemeManager {
         thumbnailPlaceholder = dark
             ? UIColor(white: 0.15, alpha: 1)
             : UIColor(white: 0.85, alpha: 1)
+        newContentDot = dark
+            ? UIColor(red: 62 / 255, green: 166 / 255, blue: 1, alpha: 1)
+            : UIColor(red: 6 / 255, green: 95 / 255, blue: 212 / 255, alpha: 1)
         skeletonBase    = dark ? UIColor(white: 0.13, alpha: 1) : UIColor(white: 0.88, alpha: 1)
         skeletonShimmer = dark ? UIColor(white: 0.22, alpha: 1) : UIColor(white: 0.78, alpha: 1)
         skeletonBlock   = dark ? UIColor(white: 0.18, alpha: 1) : UIColor(white: 0.82, alpha: 1)

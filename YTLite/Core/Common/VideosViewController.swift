@@ -1,14 +1,6 @@
 import UIKit
 
-/// A titled group of videos rendered as one collection-view section.
-struct VideoSection {
-    let title: String?
-    var videos: [Video]
-    /// The shelf's own token — rails page horizontally with it.
-    var continuation: String?
-}
-
-class VideosViewController: UIViewController {
+class VideosViewController: UIViewController, ScrollableToTop {
     // MARK: - Type Properties
 
     static let skeletonCount = 9
@@ -23,16 +15,22 @@ class VideosViewController: UIViewController {
 
     var useRails: Bool { false }
 
-    private(set) var sections: [VideoSection] = []
+    /// Mutated only by the Page Management extension.
+    var sections: [VideoSection] = []
     private(set) var collectionView: UICollectionView?
     let channelViewControllerFactory: (String, String) -> UIViewController
     let videoRouter: VideoRouter
     let spinner = UIActivityIndicatorView(style: .white)
     var isLoadingInitial = true
     var isLoadingMore = false
+    /// Hides the navigation bar on scroll-down; subclasses with extra
+    /// top bars (Home's chips) hook `onChange` to hide them in sync.
+    lazy var topBarHider = TopBarAutoHider(owner: self)
 
-    private var continuationToken: String?
-    private var seenVideoIds: Set<String> = []
+    /// Backing state for page accumulation — mutated only by the
+    /// Page Management extension (`VideosViewController+Pages`).
+    var continuationToken: String?
+    var seenVideoIds: Set<String> = []
     /// Sections with an in-flight horizontal (rail) page fetch.
     var loadingRailSections: Set<Int> = []
 
@@ -74,6 +72,13 @@ class VideosViewController: UIViewController {
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         updateItemSize()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // The hidden bar belongs to the shared navigation controller —
+        // restore it before another screen takes over.
+        topBarHider.showBars()
     }
 
     override func viewWillTransition(
@@ -155,6 +160,15 @@ class VideosViewController: UIViewController {
 
     func handleScroll(_ scrollView: UIScrollView) {}
 
+    @objc dynamic
+    func scrollToTop() {
+        topBarHider.showBars()
+        collectionView?.setContentOffset(
+            CGPoint(x: 0, y: -(collectionView?.adjustedContentInset.top ?? 0)),
+            animated: true
+        )
+    }
+
     // Override in subclasses to load next page
     func handleLoadMore() {}
 
@@ -181,117 +195,5 @@ class VideosViewController: UIViewController {
         let theme = ThemeManager.shared
         view.backgroundColor = theme.background
         collectionView?.backgroundColor = theme.background
-    }
-}
-
-// MARK: - Page Management
-
-extension VideosViewController {
-    /// Splits the page's videos into sections following its shelf
-    /// partition, deduplicating against already-shown videos.
-    private func makeSections(from page: FeedPage) -> [VideoSection] {
-        let grouped = groupsByShelf ? page.shelves : nil
-        let shelves = grouped
-            ?? [FeedShelf(title: nil, count: page.videos.count)]
-        var result: [VideoSection] = []
-        var index = 0
-        for shelf in shelves {
-            let end = min(index + shelf.count, page.videos.count)
-            let slice = page.videos[index..<end].filter {
-                seenVideoIds.insert($0.id).inserted
-            }
-            index = end
-            if !slice.isEmpty {
-                result.append(VideoSection(
-                    title: shelf.title,
-                    videos: slice,
-                    continuation: shelf.continuation
-                ))
-            }
-        }
-        let rest = page.videos.dropFirst(index).filter {
-            seenVideoIds.insert($0.id).inserted
-        }
-        if !rest.isEmpty {
-            result.append(VideoSection(title: nil, videos: rest))
-        }
-        return result
-    }
-
-    func setPage(_ page: FeedPage) {
-        isLoadingInitial = false
-        seenVideoIds = []
-        loadingRailSections = []
-        sections = makeSections(from: page)
-        continuationToken = page.continuation
-        isLoadingMore = false
-        collectionView?.reloadData()
-    }
-
-    /// Appends a rail's horizontal page to its section; returns the
-    /// deduplicated videos that were actually added.
-    func appendToRail(
-        _ videos: [Video],
-        section: Int,
-        continuation: String?
-    ) -> [Video] {
-        sections[section].continuation = continuation
-        let fresh = videos.filter {
-            seenVideoIds.insert($0.id).inserted
-        }
-        sections[section].videos.append(contentsOf: fresh)
-        return fresh
-    }
-
-    func appendPage(_ page: FeedPage) {
-        var newSections = makeSections(from: page)
-        continuationToken = page.continuation
-        isLoadingMore = false
-
-        if isLoadingInitial {
-            isLoadingInitial = false
-            sections.append(contentsOf: newSections)
-            collectionView?.reloadData()
-            return
-        }
-        let itemPaths = mergeIntoLastSection(&newSections)
-        let insertStart = sections.count
-        sections.append(contentsOf: newSections)
-        collectionView?.performBatchUpdates {
-            if !itemPaths.isEmpty {
-                collectionView?.insertItems(at: itemPaths)
-            }
-            if insertStart < sections.count {
-                collectionView?.insertSections(
-                    IndexSet(insertStart..<sections.count)
-                )
-            }
-        }
-    }
-
-    /// A flow-layout section always starts a new row, so a page
-    /// boundary inside the same (or untitled) shelf would leave a
-    /// gap — extend the previous section instead. Rails render one
-    /// item per section, so item inserts don't apply there.
-    private func mergeIntoLastSection(
-        _ newSections: inout [VideoSection]
-    ) -> [IndexPath] {
-        guard !useRails,
-              let first = newSections.first,
-              let last = sections.indices.last,
-              sections[last].title == first.title
-        else {
-            return []
-        }
-        let start = sections[last].videos.count
-        sections[last].videos.append(contentsOf: first.videos)
-        newSections.removeFirst()
-        return (start..<start + first.videos.count).map {
-            IndexPath(item: $0, section: last)
-        }
-    }
-
-    func finishLoadingMore() {
-        isLoadingMore = false
     }
 }

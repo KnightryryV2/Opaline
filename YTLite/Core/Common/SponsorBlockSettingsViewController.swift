@@ -15,7 +15,7 @@ final class SponsorBlockSettingsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "SponsorBlock"
+        title = "settings.section.sponsorblock".localized
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .done,
             target: self,
@@ -81,7 +81,7 @@ extension SponsorBlockSettingsViewController: UITableViewDataSource, UITableView
         _ tableView: UITableView,
         titleForHeaderInSection section: Int
     ) -> String? {
-        "Segment Categories"
+        "sponsorblock.segmentCategories".localized
     }
 
     func tableView(
@@ -157,7 +157,7 @@ extension SponsorBlockSettingsViewController: UITableViewDataSource, UITableView
             )
         }
         sheet.addAction(
-            UIAlertAction(title: "Cancel", style: .cancel)
+            UIAlertAction(title: "common.cancel".localized, style: .cancel)
         )
         configurePopover(sheet, at: indexPath)
         present(sheet, animated: true)

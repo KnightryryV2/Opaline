@@ -1,8 +1,22 @@
 import Foundation
 
 enum InnertubeContexts {
-    /// Full web client context matching YouTube.js Session.#buildContext for WEB client.
-    static let web: [String: Any] = [
+    /// Content language/region source. Defaults to the UserDefaults-backed
+    /// implementation; the composition root may override (tests, previews).
+    static var localePreferences: LocalePreferences = DefaultLocalePreferences()
+
+    // Public accessors: each template with the user's `hl`/`gl` applied.
+    // The ONE deliberate exception is visitorData minting
+    // (InnertubeClient+VisitorData) — its context/headers stay English for
+    // BotGuard/fingerprint stability and do not come from here.
+    static var web: [String: Any] { localized(webTemplate) }
+    static var tv: [String: Any] { localized(tvTemplate) }
+    static var mweb: [String: Any] { localized(mwebTemplate) }
+    static var android: [String: Any] { localized(androidTemplate) }
+    static var androidVR: [String: Any] { localized(androidVRTemplate) }
+    static var ios: [String: Any] { localized(iosTemplate) }
+
+    private static let webTemplate: [String: Any] = [
         "context": [
             "client": [
                 "clientName": "WEB",
@@ -38,7 +52,7 @@ enum InnertubeContexts {
             "request": ["useSsl": true, "internalExperimentFlags": []]
         ]
     ]
-    static let tv: [String: Any] = [
+    private static let tvTemplate: [String: Any] = [
         "context": [
             "client": [
                 "clientName": "TVHTML5",
@@ -55,7 +69,7 @@ enum InnertubeContexts {
     /// Mobile web client. Logged-out, so its GVS `pot` binds to visitorData —
     /// matching the anonymous BotGuard token we mint (unlike authed TVHTML5,
     /// whose pot binds to the account datasyncId).
-    static let mweb: [String: Any] = [
+    private static let mwebTemplate: [String: Any] = [
         "context": [
             "client": [
                 "clientName": "MWEB",
@@ -66,7 +80,7 @@ enum InnertubeContexts {
             ]
         ]
     ]
-    static let android: [String: Any] = [
+    private static let androidTemplate: [String: Any] = [
         "context": [
             "client": [
                 "clientName": "ANDROID",
@@ -90,7 +104,7 @@ enum InnertubeContexts {
         ]
     ]
 
-    static let androidVR: [String: Any] = [
+    private static let androidVRTemplate: [String: Any] = [
         "context": [
             "client": [
                 "clientName": "ANDROID_VR",
@@ -114,7 +128,7 @@ enum InnertubeContexts {
 
     /// Official iOS app client. Its timedtext caption URLs are served without
     /// a proof-of-origin token, unlike the WEB client's.
-    static let ios: [String: Any] = [
+    private static let iosTemplate: [String: Any] = [
         "context": [
             "client": [
                 "clientName": "IOS",
@@ -128,4 +142,22 @@ enum InnertubeContexts {
             ]
         ]
     ]
+
+    /// Overrides `context.client.hl`/`gl` with the user's preferences.
+    private static func localized(
+        _ template: [String: Any]
+    ) -> [String: Any] {
+        var result = template
+        guard var context = result["context"] as? [String: Any],
+              var client = context["client"] as? [String: Any] else {
+            return result
+        }
+        client["hl"] = localePreferences.hl
+        client["gl"] = localePreferences.gl
+        context["client"] = client
+        result["context"] = context
+        return result
+    }
+
+    /// Full web client context matching YouTube.js Session.#buildContext for WEB client.
 }

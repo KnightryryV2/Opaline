@@ -20,7 +20,7 @@ extension WatchViewController {
                 + " wasPlaying=\(wasPlaying)"
         )
         DispatchQueue.main.async {
-            self.updateStatusLabel("Refreshing stream...")
+            self.updateStatusLabel("player.status.refreshing".localized)
         }
         let token = CancellationToken()
         pageLoadToken = token

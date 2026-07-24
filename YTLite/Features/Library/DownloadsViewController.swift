@@ -3,7 +3,7 @@ import UIKit
 final class DownloadsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Downloads"
+        title = "library.downloads".localized
         applyTheme()
         NotificationCenter.default.addObserver(
             self,
@@ -29,7 +29,7 @@ final class DownloadsViewController: UIViewController {
         }
 
         let label = UILabel()
-        label.text = "Downloads coming soon"
+        label.text = "library.downloads.comingSoon".localized
         label.textColor = .lightGray
         label.font = UIFont.systemFont(ofSize: 15)
         label.textAlignment = .center

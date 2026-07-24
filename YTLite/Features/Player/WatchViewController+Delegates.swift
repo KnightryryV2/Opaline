@@ -6,19 +6,33 @@ extension WatchViewController: VideoPlayerViewDelegate {
     func videoPlayerViewDidTapSettings(
         _ playerView: VideoPlayerView
     ) {
-        let statsOn = statsOverlay != nil
-        presentPlayerMenu(
-            title: "Playback settings",
-            items: [
-                PlayerMenuItem(title: "Quality") { [weak self] in
-                    self?.showQualityPicker()
-                },
+        let stats = "player.menu.stats".localized
+        var items = [
+            PlayerMenuItem(
+                title: "player.menu.quality".localized
+            ) { [weak self] in
+                self?.showQualityPicker()
+            }
+        ]
+        if playbackFacade.activeVideoSource?
+            .supportsAudioTrackSelection == true {
+            items.append(
                 PlayerMenuItem(
-                    title: statsOn ? "✓ Stats for nerds" : "Stats for nerds"
+                    title: "player.menu.audioTrack".localized
                 ) { [weak self] in
-                    self?.toggleStatsOverlay()
+                    self?.showAudioTrackPicker()
                 }
-            ]
+            )
+        }
+        items.append(
+            PlayerMenuItem(
+                title: statsOverlay != nil ? "✓ \(stats)" : stats
+            ) { [weak self] in
+                self?.toggleStatsOverlay()
+            }
+        )
+        presentPlayerMenu(
+            title: "player.menu.settings".localized, items: items
         )
     }
 

@@ -32,7 +32,9 @@ extension ChannelViewController {
 
     func applyPageSubscription(_ page: ChannelPage) {
         let txt = page.subscribeButtonText
-            ?? (page.isSubscribed ? "Subscribed" : "Subscribe")
+            ?? (page.isSubscribed
+                ? "common.subscribed".localized
+                : "common.subscribe".localized)
         headerView.updateSubscription(
             title: txt, isEnabled: !OAuthClient.shared.isAnonymous
         )
@@ -110,7 +112,9 @@ extension ChannelViewController {
         subscribed: Bool,
         enabled: Bool
     ) {
-        let txt = subscribed ? "Subscribed" : "Subscribe"
+        let txt = subscribed
+            ? "common.subscribed".localized
+            : "common.subscribe".localized
         headerView.updateSubscription(
             title: txt,
             isEnabled: enabled

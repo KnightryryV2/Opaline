@@ -14,8 +14,28 @@ extension ChannelViewController {
             tabsView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tabsView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
+        topBarHider.onChange = { [weak self] hidden in
+            self?.applyTopChromeHidden(hidden)
+        }
         installFilterBar()
         applyCollectionInsets(to: cv)
+    }
+
+    /// Runs inside the top-bar hide/show animation — the tabs and the
+    /// filter chips slide away together with the navigation bar.
+    func applyTopChromeHidden(_ hidden: Bool) {
+        let tabsShift = ChannelTabsView.preferredHeight
+        tabsView.alpha = hidden ? 0 : 1
+        tabsView.transform = hidden
+            ? CGAffineTransform(translationX: 0, y: -tabsShift)
+            : .identity
+        filterBar.alpha = hidden ? 0 : 1
+        filterBar.transform = hidden
+            ? CGAffineTransform(
+                translationX: 0,
+                y: -(tabsShift + ChannelFilterBarView.preferredHeight)
+            )
+            : .identity
     }
 
     func installFilterBar() {

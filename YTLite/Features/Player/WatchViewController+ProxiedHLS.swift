@@ -35,7 +35,9 @@ extension WatchViewController {
                 self?.selectSourceQuality(quality, source: source)
             }
         }
-        presentPlayerMenu(title: "Quality", items: items)
+        presentPlayerMenu(
+            title: "player.menu.quality".localized, items: items
+        )
     }
 
     private func selectSourceQuality(
@@ -46,7 +48,8 @@ extension WatchViewController {
             return
         }
         let resumeTime = videoPlayerView?.player?.currentTime()
-        playerStatusLabel.text = "Loading \(quality.label)..."
+        playerStatusLabel.text = "player.status.loading"
+            .localized(with: quality.label)
         playerStatusLabel.isHidden = false
         source.selectQuality(quality) { [weak self] result in
             DispatchQueue.main.async {
@@ -54,7 +57,9 @@ extension WatchViewController {
                 case .success(let prepared):
                     self?.attachPrepared(prepared, resumeAt: resumeTime)
                 case .failure:
-                    self?.showPlaybackError("Quality switch failed.")
+                    self?.showPlaybackError(
+                        "player.error.qualitySwitch".localized
+                    )
                 }
             }
         }

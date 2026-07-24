@@ -47,11 +47,32 @@ enum UserDefaultsKeys {
         static let history = "search_history"
     }
 
+    enum Localization {
+        /// In-app UI language override; absent = follow the system.
+        static let appLanguage = "localization_appLanguage"
+        /// Innertube `gl`; absent = device region.
+        static let region = "localization_region"
+    }
+
     enum Player {
         static let backgroundPlayback = "player_backgroundPlayback"
         static let pipEnabled = "player_pipEnabled"
         static let hideStatusBarInFullscreen = "player_hideStatusBarFullscreen"
         static let autoZoomToFill = "player_autoZoomToFill"
+    }
+
+    enum AutoDub {
+        static let enabled = "autoDub_enabled"
+        static let ignoreAIDubs = "autoDub_ignoreAIDubs"
+        /// Preferred dub language code; absent = follow the app language.
+        static let language = "autoDub_language"
+    }
+
+    enum Autoplay {
+        /// Suggestion ("Up Next") autoplay: 5s countdown overlay.
+        static let enabled = "autoplay_enabled"
+        /// Mix/playlist queue autoplay: instant, no overlay.
+        static let mixEnabled = "autoplay_mixEnabled"
     }
 
     enum Innertube {

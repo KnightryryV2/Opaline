@@ -7,7 +7,7 @@ extension WatchViewController {
         commentsContinuation = nil
         visibleCommentsCount = commentsPageSize
         isLoadingComments = false
-        commentsLabel.text = "Comments"
+        commentsLabel.text = "player.comments.title".localized
         renderComments()
     }
 
@@ -19,11 +19,11 @@ extension WatchViewController {
         loadMoreCommentsButton.isEnabled = false
         loadMoreCommentsButton.isHidden = comments.isEmpty
         loadMoreCommentsButton.setTitle(
-            "Loading comments...",
+            "player.comments.loading".localized,
             for: .normal
         )
         if comments.isEmpty {
-            commentsLabel.text = "Loading comments..."
+            commentsLabel.text = "player.comments.loading".localized
             renderComments()
         }
         client.fetchComments(
@@ -52,7 +52,8 @@ extension WatchViewController {
                 + "\(initialVideo.id): \(error)"
             )
             if comments.isEmpty {
-                commentsLabel.text = "Comments unavailable"
+                commentsLabel.text =
+                    "player.comments.unavailable".localized
             }
         case .success(let page):
             commentsContinuation = page.continuation
@@ -62,7 +63,8 @@ extension WatchViewController {
                 appendNewComments(page.comments)
             }
             commentsLabel.text = page.title
-                ?? "Comments (\(comments.count))"
+                ?? "player.comments.titleCount"
+                    .localized(with: comments.count)
         }
         renderComments()
     }
@@ -102,8 +104,8 @@ extension WatchViewController {
         emptyLabel.textColor =
             ThemeManager.shared.secondaryText
         emptyLabel.text = isLoadingComments
-            ? "Loading comments..."
-            : "Comments are unavailable yet."
+            ? "player.comments.loading".localized
+            : "player.comments.unavailableYet".localized
         commentsStackView.addArrangedSubview(emptyLabel)
     }
 
@@ -114,13 +116,13 @@ extension WatchViewController {
             !hasMore && !hasCont
         if isLoadingComments {
             loadMoreCommentsButton.setTitle(
-                "Loading comments...",
+                "player.comments.loading".localized,
                 for: .normal
             )
             loadMoreCommentsButton.isEnabled = false
         } else {
             loadMoreCommentsButton.setTitle(
-                "Load more comments",
+                "player.comments.loadMore".localized,
                 for: .normal
             )
             loadMoreCommentsButton.isEnabled = true

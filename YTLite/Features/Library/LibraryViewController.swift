@@ -13,11 +13,11 @@ final class LibraryViewController: UIViewController {
         var title: String {
             switch self {
             case .history:
-                return "History"
+                return "library.history".localized
             case .downloads:
-                return "Downloads"
+                return "library.downloads".localized
             case .playlists:
-                return "Playlists"
+                return "library.playlists".localized
             }
         }
     }
@@ -154,5 +154,25 @@ final class LibraryViewController: UIViewController {
                 for: .selected
             )
         }
+    }
+}
+
+// MARK: - ScrollableToTop
+
+extension LibraryViewController: ScrollableToTop {
+    func scrollToTop() {
+        guard let topVC = currentChild?.topViewController else {
+            return
+        }
+        // Children that auto-hide the top bar restore it themselves.
+        if let scrollable = topVC as? ScrollableToTop {
+            scrollable.scrollToTop()
+            return
+        }
+        let scrollView = topVC.view.subviews.compactMap { $0 as? UIScrollView }.first
+        scrollView?.setContentOffset(
+            CGPoint(x: 0, y: -(scrollView?.adjustedContentInset.top ?? 0)),
+            animated: true
+        )
     }
 }

@@ -25,10 +25,20 @@ final class MWebSource: VideoSource {
     let kind: VideoSourceKind = .mwebPot
     var supportsQualitySelection: Bool { !availableQualities.isEmpty }
     var currentCodecs: String? {
-        AndroidVRSource.codecsLine(info: info, quality: currentQuality)
+        AndroidVRSource.codecsLine(
+            info: info, quality: currentQuality, audio: currentAudioFormat
+        )
     }
     private(set) var availableQualities: [VideoQuality] = []
     private(set) var currentQuality: VideoQuality?
+    private(set) var availableAudioTracks: [AudioTrack] = []
+    private(set) var currentAudioTrack: AudioTrack?
+    /// The audio format playback is built with — the user-picked dub, or the
+    /// default-track pick (`info.dashAudioFormat`) until one is chosen.
+    private(set) var currentAudioFormat: DashFormatInfo?
+    /// Track picked from IOS-probe metadata before any mweb /player fetch —
+    /// consumed by [[updateAudioTrackState]] so the first build starts on it.
+    var pendingAudioTrackId: String?
 
     let apiClient: WatchService
     let poTokenService: PoTokenProvider
@@ -90,7 +100,7 @@ final class MWebSource: VideoSource {
               let format = info.allDashVideoFormats.first(
                   where: { "\($0.itag)" == quality.id }
               ),
-              let audio = info.dashAudioFormat else {
+              let audio = currentAudioFormat ?? info.dashAudioFormat else {
             completion(.failure(Self.noStreamError))
             return
         }
@@ -109,6 +119,20 @@ final class MWebSource: VideoSource {
         currentQuality = info.dashVideoFormat.flatMap { selected in
             availableQualities.first { $0.id == "\(selected.itag)" }
         }
+        updateAudioTrackState(from: info)
+    }
+
+    /// `private(set)` keeps the audio-track setters in this file — the
+    /// audio-track extension (probe/selection) publishes its state through
+    /// here, mirroring [[applyLiveQualityState]].
+    func setAudioTrackState(
+        available: [AudioTrack],
+        current: AudioTrack?,
+        format: DashFormatInfo?
+    ) {
+        availableAudioTracks = available
+        currentAudioTrack = current
+        currentAudioFormat = format
     }
 
     /// `private(set)` keeps the quality setters in this file — the live

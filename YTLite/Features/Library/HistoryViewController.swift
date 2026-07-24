@@ -16,6 +16,7 @@ final class HistoryViewController: UIViewController {
     private let tableView = UITableView()
     private let spinner = UIActivityIndicatorView(style: .white)
     private let emptyLabel = UILabel()
+    private lazy var topBarHider = TopBarAutoHider(owner: self)
 
     init(
         service: HistoryService,
@@ -40,7 +41,7 @@ final class HistoryViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "History"
+        title = "library.history".localized
         setupTableView()
         setupSpinner()
         setupEmpty()
@@ -58,6 +59,18 @@ final class HistoryViewController: UIViewController {
             isLoadingInitial = false
             showSignInRequired()
         }
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        topBarHider.showBars()
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView === tableView else {
+            return
+        }
+        topBarHider.handleScroll(scrollView)
     }
 
     // MARK: - Setup
@@ -112,7 +125,7 @@ final class HistoryViewController: UIViewController {
     }
 
     private func showSignInRequired() {
-        emptyLabel.text = "Sign in to view your watch history"
+        emptyLabel.text = "library.history.signIn".localized
         emptyLabel.isHidden = false
     }
 
@@ -206,6 +219,16 @@ final class HistoryViewController: UIViewController {
     }
 }
 
+extension HistoryViewController: ScrollableToTop {
+    func scrollToTop() {
+        topBarHider.showBars()
+        tableView.setContentOffset(
+            CGPoint(x: 0, y: -tableView.adjustedContentInset.top),
+            animated: true
+        )
+    }
+}
+
 private extension HistoryViewController {
     func applyHistoryPage(_ page: FeedPage) {
         cache.setHistoryFeed(page)
@@ -213,7 +236,7 @@ private extension HistoryViewController {
         continuationToken = page.continuation
         emptyLabel.isHidden = !page.videos.isEmpty
         if page.videos.isEmpty {
-            emptyLabel.text = "No watch history found"
+            emptyLabel.text = "library.history.empty".localized
         }
         tableView.reloadData()
     }
@@ -221,7 +244,7 @@ private extension HistoryViewController {
     func handleHistoryError(_ error: Error) {
         AppLog.log("History", "error: \(error)")
         if videos.isEmpty {
-            emptyLabel.text = "Could not load history"
+            emptyLabel.text = "library.history.loadFailed".localized
             emptyLabel.isHidden = false
         }
         tableView.reloadData()

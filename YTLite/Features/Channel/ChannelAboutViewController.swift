@@ -15,7 +15,7 @@ final class ChannelAboutViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = theme.background
-        title = "About"
+        title = "channel.about.title".localized
         if #available(iOS 13, *) {
             navigationItem.rightBarButtonItem = UIBarButtonItem(
                 barButtonSystemItem: .close,
@@ -24,7 +24,7 @@ final class ChannelAboutViewController: UIViewController {
             )
         } else {
             navigationItem.rightBarButtonItem = UIBarButtonItem(
-                title: "Close",
+                title: "channel.about.close".localized,
                 style: .done,
                 target: self,
                 action: #selector(dismissSelf)
@@ -77,13 +77,17 @@ final class ChannelAboutViewController: UIViewController {
         statsStack.distribution = .fillEqually
 
         if let subs = page.info.subscriberCountText {
-            statsStack.addArrangedSubview(makeStatView(value: subs, label: "Subscribers"))
+            statsStack.addArrangedSubview(makeStatView(
+                value: subs, label: "channel.about.subscribers".localized
+            ))
         }
         if let vids = page.info.videoCountText {
             let count = vids
                 .replacingOccurrences(of: " videos", with: "", options: .caseInsensitive)
                 .replacingOccurrences(of: " video", with: "", options: .caseInsensitive)
-            statsStack.addArrangedSubview(makeStatView(value: count, label: "Videos"))
+            statsStack.addArrangedSubview(makeStatView(
+                value: count, label: "channel.about.videos".localized
+            ))
         }
         if !statsStack.arrangedSubviews.isEmpty {
             stack.addArrangedSubview(statsStack)
@@ -96,7 +100,7 @@ final class ChannelAboutViewController: UIViewController {
             return
         }
         let descHeader = makeLabel(
-            text: "Description",
+            text: "channel.about.description".localized,
             style: .subheadline,
             color: theme.secondaryText
         )
@@ -112,7 +116,7 @@ final class ChannelAboutViewController: UIViewController {
             return
         }
         let header = makeLabel(
-            text: "Contact",
+            text: "channel.about.contact".localized,
             style: .subheadline,
             color: theme.secondaryText
         )

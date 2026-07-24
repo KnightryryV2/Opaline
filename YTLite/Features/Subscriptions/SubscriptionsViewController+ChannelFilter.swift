@@ -39,6 +39,7 @@ extension SubscriptionsViewController {
     func openAllChannels() {
         let list = SubscribedChannelsViewController(
             channels: subscribedChannels,
+            newContentChannelIds: newContentChannelIds,
             channelViewControllerFactory: channelViewControllerFactory
         )
         navigationController?.pushViewController(list, animated: true)
@@ -55,7 +56,7 @@ extension SubscriptionsViewController {
         }
         selectedChannel = nil
         channelBar.setSelectedChannelId(nil)
-        title = "Subscriptions"
+        title = "subscriptions.title".localized
         navigationItem.leftBarButtonItem = nil
         videos = stashedVideos
         continuationToken = stashedContinuation

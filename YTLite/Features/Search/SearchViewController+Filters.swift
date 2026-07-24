@@ -3,6 +3,33 @@ import UIKit
 // MARK: - Search filters UI
 
 extension SearchViewController {
+    private struct FilterRow {
+        let key: String
+        let value: String
+        let handler: () -> Void
+    }
+
+    private var filterRows: [FilterRow] {
+        [
+            FilterRow(
+                key: "search.filters.sort",
+                value: filters.sort.displayName
+            ) { [weak self] in self?.showSortPicker() },
+            FilterRow(
+                key: "search.filters.date",
+                value: filters.uploadDate.displayName
+            ) { [weak self] in self?.showDatePicker() },
+            FilterRow(
+                key: "search.filters.type",
+                value: filters.type.displayName
+            ) { [weak self] in self?.showTypePicker() },
+            FilterRow(
+                key: "search.filters.duration",
+                value: filters.duration.displayName
+            ) { [weak self] in self?.showDurationPicker() }
+        ]
+    }
+
     func setupFiltersButton() {
         filtersButton.target = self
         filtersButton.action = #selector(filtersTapped)
@@ -11,68 +38,52 @@ extension SearchViewController {
     }
 
     private func updateFiltersButton() {
-        filtersButton.title = filters.isDefault ? "Filters" : "Filters •"
+        filtersButton.title = filters.isDefault
+            ? "search.filters".localized
+            : "search.filters.active".localized
     }
 
     @objc
     private func filtersTapped() {
         let sheet = UIAlertController(
-            title: "Search Filters", message: nil, preferredStyle: .actionSheet
+            title: "search.filters.title".localized,
+            message: nil,
+            preferredStyle: .actionSheet
         )
         addFilterActions(to: sheet)
         if !filters.isDefault {
             sheet.addAction(
                 UIAlertAction(
-                    title: "Reset filters",
+                    title: "search.filters.reset".localized,
                     style: .destructive
                 ) { [weak self] _ in
                     self?.apply { $0 = SearchFilters() }
                 }
             )
         }
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "common.cancel".localized, style: .cancel))
         sheet.popoverPresentationController?.barButtonItem = filtersButton
         present(sheet, animated: true)
     }
 
     private func addFilterActions(to sheet: UIAlertController) {
-        sheet.addAction(
-            UIAlertAction(
-                title: "Sort: \(filters.sort.displayName)", style: .default
-            ) { [weak self] _ in
-                self?.showSortPicker()
-            }
-        )
-        sheet.addAction(
-            UIAlertAction(
-                title: "Date: \(filters.uploadDate.displayName)",
-                style: .default
-            ) { [weak self] _ in
-                self?.showDatePicker()
-            }
-        )
-        sheet.addAction(
-            UIAlertAction(
-                title: "Type: \(filters.type.displayName)", style: .default
-            ) { [weak self] _ in
-                self?.showTypePicker()
-            }
-        )
-        sheet.addAction(
-            UIAlertAction(
-                title: "Duration: \(filters.duration.displayName)",
-                style: .default
-            ) { [weak self] _ in
-                self?.showDurationPicker()
-            }
-        )
+        for row in filterRows {
+            sheet.addAction(
+                UIAlertAction(
+                    title: row.key.localized(with: row.value),
+                    style: .default
+                ) { _ in
+                    row.handler()
+                }
+            )
+        }
     }
 
     // MARK: - Pickers
 
     private func showSortPicker() {
         presentOptions(
-            title: "Sort by",
+            title: "search.filters.sortTitle".localized,
             names: SearchFilters.Sort.allCases.map { $0.displayName },
             selectedIndex: filters.sort.rawValue
         ) { [weak self] index in
@@ -82,7 +93,7 @@ extension SearchViewController {
 
     private func showDatePicker() {
         presentOptions(
-            title: "Upload date",
+            title: "search.filters.dateTitle".localized,
             names: SearchFilters.UploadDate.allCases.map { $0.displayName },
             selectedIndex: filters.uploadDate.rawValue
         ) { [weak self] index in
@@ -94,7 +105,7 @@ extension SearchViewController {
 
     private func showTypePicker() {
         presentOptions(
-            title: "Type",
+            title: "search.filters.typeTitle".localized,
             names: SearchFilters.ContentType.allCases.map { $0.displayName },
             selectedIndex: filters.type.rawValue
         ) { [weak self] index in
@@ -106,7 +117,7 @@ extension SearchViewController {
 
     private func showDurationPicker() {
         presentOptions(
-            title: "Duration",
+            title: "search.filters.durationTitle".localized,
             names: SearchFilters.Duration.allCases.map { $0.displayName },
             selectedIndex: filters.duration.rawValue
         ) { [weak self] index in
@@ -138,7 +149,7 @@ extension SearchViewController {
             }
             sheet.addAction(action)
         }
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "common.cancel".localized, style: .cancel))
         sheet.popoverPresentationController?.barButtonItem = filtersButton
         present(sheet, animated: true)
     }

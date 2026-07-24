@@ -30,9 +30,12 @@ final class AndroidVRSource: VideoSource {
     }
 
     /// "vCodec (itag) / aCodec (itag)" for the stats overlay; nil when the
-    /// active quality is not a DASH format (live variants).
+    /// active quality is not a DASH format (live variants). `audio` overrides
+    /// the default audio format (mweb after an audio-track switch).
     static func codecsLine(
-        info: DirectPlaybackInfo?, quality: VideoQuality?
+        info: DirectPlaybackInfo?,
+        quality: VideoQuality?,
+        audio: DashFormatInfo? = nil
     ) -> String? {
         guard let info, let quality,
               let video = info.allDashVideoFormats.first(
@@ -41,7 +44,7 @@ final class AndroidVRSource: VideoSource {
             return nil
         }
         let videoPart = "\(video.codecs) (\(video.itag))"
-        guard let audio = info.dashAudioFormat else {
+        guard let audio = audio ?? info.dashAudioFormat else {
             return videoPart
         }
         return videoPart + " / \(audio.codecs) (\(audio.itag))"

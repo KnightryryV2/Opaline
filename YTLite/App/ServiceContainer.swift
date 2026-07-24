@@ -29,4 +29,14 @@ enum ServiceContainer {
 
     /// Legacy accessor — prefer narrow protocols above for new code.
     static var video: VideoService { client }
+
+    /// Public per-channel Atom feeds for the new-content dots —
+    /// anonymous traffic, so it rides the undecorated media transport.
+    static let channelRSS: ChannelRSSFeedService = ChannelRSSService(
+        transport: mediaTransport
+    )
+
+    /// Content-language/region preferences for Innertube requests
+    /// (localization plan Phase 2 points `InnertubeContexts` here).
+    static let localePreferences: LocalePreferences = DefaultLocalePreferences()
 }
