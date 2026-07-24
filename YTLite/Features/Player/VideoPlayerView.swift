@@ -40,6 +40,7 @@ final class VideoPlayerView: UIView {
     // MARK: - Layers
 
     let playerLayer = AVPlayerLayer()
+    var sampleBufferLayer: CALayer?
 
     let topGradientLayer: CAGradientLayer = {
         let gradient = CAGradientLayer()
@@ -257,6 +258,7 @@ final class VideoPlayerView: UIView {
             x: bounds.midX,
             y: bounds.midY
         )
+        updateSampleBufferLayerFrame()
         topGradientLayer.frame = CGRect(
             x: 0,
             y: 0,

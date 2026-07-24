@@ -9,6 +9,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        CodecCapabilityProbe.logOnce()
         runMigrations()
         configureSharedDependencies()
         ThemeManager.shared.applyGlobal()

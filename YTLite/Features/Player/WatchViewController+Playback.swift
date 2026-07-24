@@ -47,6 +47,32 @@ extension WatchViewController {
         engine.playImmediately(atRate: pv.playbackSpeed)
     }
 
+    /// Attaches a pre-built engine (the sample-buffer path) directly, skipping
+    /// the `AVPlayerItem`-specific KVO (`startObservingPlayerItem` watches
+    /// item status/notifications the engine doesn't have) and the buffer
+    /// policy, which only applies to `AVPlayerItem`/`AVPlayer`.
+    func attachEngine(_ engine: PlayerEngine) {
+        guard !pageLoadToken.isCancelled else {
+            return
+        }
+        resetPlaybackSurfaces()
+        playerSpinner.stopAnimating()
+        playerStatusLabel.isHidden = true
+        let pv = getOrCreatePlayerView()
+        configureSponsorBlock(on: pv)
+        playerContainer.bringSubviewToFront(pv)
+        pv.attach(engine: engine)
+        engine.playImmediately(atRate: pv.playbackSpeed)
+        // The engine path has no AVPlayerItem status observer, so start the
+        // Now Playing session and saved-position resume here instead — the
+        // engine's duration is known upfront from its ctor.
+        let duration = engine.duration.seconds
+        if duration.isFinite, duration > 0 {
+            beginNowPlayingSession(duration: duration)
+        }
+        seekToSavedPositionIfNeeded()
+    }
+
     private func attachToExistingEngine(
         _ engine: AVPlayerEngine,
         item: AVPlayerItem

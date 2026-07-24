@@ -50,7 +50,7 @@ extension WatchViewController {
         guard track != source.currentAudioTrack else {
             return
         }
-        let resumeTime = videoPlayerView?.player?.currentTime()
+        let resumeTime = videoPlayerView?.engine?.currentTime
         playerStatusLabel.text = "player.status.loading"
             .localized(with: track.displayName)
         playerStatusLabel.isHidden = false

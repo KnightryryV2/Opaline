@@ -14,8 +14,12 @@ final class ClockResyncState {
 extension VideoPlayerView {
     func attach(engine newEngine: PlayerEngine) {
         engine = newEngine
-        playerLayer.isHidden = false
-        playerLayer.player = (newEngine as? AVPlayerEngine)?.player
+        if let videoLayer = newEngine.videoLayer {
+            attachSampleBufferLayer(videoLayer)
+        } else {
+            playerLayer.isHidden = false
+            playerLayer.player = (newEngine as? AVPlayerEngine)?.player
+        }
         bindEngineCallbacks(newEngine)
         addPeriodicObserver()
         updatePlayPauseIcon()
@@ -23,6 +27,33 @@ extension VideoPlayerView {
         if playbackSpeed != 1.0 {
             newEngine.rate = playbackSpeed
         }
+    }
+
+    /// Hosts an engine-owned render surface (sample-buffer path) in place of
+    /// `AVPlayerLayer`. `playerLayer` stays in the hierarchy but hidden and
+    /// player-less, mirroring how `detach()` already leaves it.
+    private func attachSampleBufferLayer(_ videoLayer: CALayer) {
+        playerLayer.isHidden = true
+        playerLayer.player = nil
+        if sampleBufferLayer !== videoLayer {
+            sampleBufferLayer?.removeFromSuperlayer()
+            layer.addSublayer(videoLayer)
+            sampleBufferLayer = videoLayer
+        }
+        updateSampleBufferLayerFrame()
+    }
+
+    /// Positions the hosted sample-buffer layer exactly like `playerLayer` —
+    /// called from `layoutSubviews`. No-op on the AVPlayer path.
+    func updateSampleBufferLayerFrame() {
+        guard let sampleBufferLayer else {
+            return
+        }
+        sampleBufferLayer.bounds = bounds
+        sampleBufferLayer.position = CGPoint(
+            x: bounds.midX,
+            y: bounds.midY
+        )
     }
 
     /// Rebinds after the host replaced the item on the SAME engine
@@ -46,6 +77,8 @@ extension VideoPlayerView {
         clockResync.workItem = nil
         playerLayer.isHidden = false
         playerLayer.player = nil
+        sampleBufferLayer?.removeFromSuperlayer()
+        sampleBufferLayer = nil
         engine = nil
         hideSkipButton()
         sponsorSegments = []

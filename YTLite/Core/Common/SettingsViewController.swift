@@ -17,6 +17,7 @@ final class SettingsViewController: UIViewController {
         case sponsorBlockEnabled, sponsorBlockSettings
         case playbackSource
         case solverEndpoint
+        case forceSampleBuffer
         case shareLog
     }
     private struct Section {
@@ -105,7 +106,10 @@ final class SettingsViewController: UIViewController {
             Section(
                 header: "settings.section.debug".localized,
                 footer: "settings.footer.debug".localized,
-                rows: [.playbackSource, .solverEndpoint, .shareLog]
+                rows: [
+                    .playbackSource, .solverEndpoint,
+                    .forceSampleBuffer, .shareLog
+                ]
             ),
             Section(header: nil, footer: appVersionFooter, rows: [])
         ]
@@ -384,6 +388,17 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
                 "settings.row.solverServer".localized,
                 value: solverEndpointDisplay
             )
+        case .forceSampleBuffer:
+            let isOn = UserDefaults.standard.bool(
+                forKey: UserDefaultsKeys.Debug.forceSampleBufferEngine
+            )
+            return makeToggleCell(
+                "settings.row.forceSampleBuffer".localized, isOn: isOn
+            ) {
+                UserDefaults.standard.set(
+                    $0, forKey: UserDefaultsKeys.Debug.forceSampleBufferEngine
+                )
+            }
         }
     }
 

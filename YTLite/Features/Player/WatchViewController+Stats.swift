@@ -67,7 +67,25 @@ extension WatchViewController {
         rows.append(row("Connection Speed", speedValue(item)))
         rows.append(row("Network Activity", transferredValue(item)))
         rows.append(row("Buffer Health", bufferValue(item)))
+        // The sample-buffer engine has no AVPlayerItem, so the item-based rows
+        // above read "?"; surface what the engine does expose.
+        if item == nil, let engine = videoPlayerView?.engine {
+            rows.append(row("Engine", "sample-buffer"))
+            rows.append(row("Buffer (engine)", engineBufferValue(engine)))
+        }
         return rows.joined(separator: "\n")
+    }
+
+    private func engineBufferValue(_ engine: PlayerEngine) -> String {
+        let now = CMTimeGetSeconds(engine.currentTime)
+        let bufferedEnd = engine.loadedTimeRanges
+            .map { CMTimeGetSeconds($0.start) + CMTimeGetSeconds($0.duration) }
+            .filter { $0 >= now }
+            .max()
+        guard let bufferedEnd else {
+            return "0.0 s"
+        }
+        return String(format: "%.1f s", bufferedEnd - now)
     }
 
     private func row(_ title: String, _ value: String) -> String {

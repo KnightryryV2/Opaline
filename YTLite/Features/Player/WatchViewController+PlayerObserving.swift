@@ -98,7 +98,7 @@ extension WatchViewController {
         beginNowPlayingSession(duration: duration)
     }
 
-    private func seekToSavedPositionIfNeeded() {
+    func seekToSavedPositionIfNeeded() {
         guard !didSeekToSavedPosition else {
             return
         }
@@ -116,24 +116,23 @@ extension WatchViewController {
     private func seekToProgress(
         _ prog: WatchProgress
     ) {
-        guard let player = videoPlayerView?.player
+        guard let engine = videoPlayerView?.engine
         else {
             return
         }
-        let dur = CMTimeGetSeconds(
-            player.currentItem?.duration ?? .zero
-        )
+        let dur = CMTimeGetSeconds(engine.duration)
         guard dur > 0 else {
             return
         }
         let pos = prog.fraction * dur
-        player.seek(
+        engine.seek(
             to: CMTime(
                 seconds: pos,
                 preferredTimescale: 1_000
             ),
             toleranceBefore: .zero,
-            toleranceAfter: .zero
+            toleranceAfter: .zero,
+            completion: nil
         )
         AppLog.player(
             "resumed at \(Int(pos))s"

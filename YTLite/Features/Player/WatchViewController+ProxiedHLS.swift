@@ -15,12 +15,17 @@ extension WatchViewController {
         if !prepared.captions.isEmpty {
             setCaptionTracks(prepared.captions)
         }
-        attachPlayer(item: prepared.item)
+        if let engine = prepared.engine {
+            attachEngine(engine)
+        } else if let item = prepared.item {
+            attachPlayer(item: item)
+        }
         if let resumeAt, CMTimeGetSeconds(resumeAt) > 1 {
-            videoPlayerView?.player?.seek(
+            videoPlayerView?.engine?.seek(
                 to: resumeAt,
                 toleranceBefore: CMTime(seconds: 1, preferredTimescale: 1_000),
-                toleranceAfter: CMTime(seconds: 1, preferredTimescale: 1_000)
+                toleranceAfter: CMTime(seconds: 1, preferredTimescale: 1_000),
+                completion: nil
             )
         }
     }
@@ -47,7 +52,7 @@ extension WatchViewController {
         guard quality != source.currentQuality else {
             return
         }
-        let resumeTime = videoPlayerView?.player?.currentTime()
+        let resumeTime = videoPlayerView?.engine?.currentTime
         playerStatusLabel.text = "player.status.loading"
             .localized(with: quality.label)
         playerStatusLabel.isHidden = false

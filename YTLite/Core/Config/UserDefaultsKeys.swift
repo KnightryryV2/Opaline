@@ -83,6 +83,9 @@ enum UserDefaultsKeys {
     enum Debug {
         static let playbackSource = "debug_playbackSource"
         static let serverBaseURL = "debug_serverBaseURL"
+        /// Routes avc1 ≤1080p through the software sample-buffer engine
+        /// instead of the generated-HLS/AVPlayer path (Phase 2 dev toggle).
+        static let forceSampleBufferEngine = "debug_forceSampleBufferEngine"
     }
 
     enum Migration {

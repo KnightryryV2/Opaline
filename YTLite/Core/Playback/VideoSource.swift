@@ -48,9 +48,15 @@ struct AudioTrack: Equatable {
 }
 
 /// A ready-to-play result handed back to the player shell. The shell attaches
-/// `item` and retains `resourceLoader` for the item's lifetime.
+/// `item` and retains `resourceLoader` for the item's lifetime. Sources with
+/// no `AVPlayerItem` (the sample-buffer path) hand back a pre-built `engine`
+/// instead — exactly one of `item` / `engine` is non-nil.
 struct PreparedPlayback {
-    let item: AVPlayerItem
+    let item: AVPlayerItem?
+    /// Pre-built engine for sources that don't produce an `AVPlayerItem`
+    /// (e.g. software-decoded AV1 via `SampleBufferEngine`). nil for the
+    /// AVPlayerItem-based path, which is unaffected.
+    let engine: PlayerEngine?
     let resourceLoader: AVAssetResourceLoaderDelegate?
     let captions: [SubtitleTrack]
     let duration: Double?
@@ -62,7 +68,20 @@ struct PreparedPlayback {
         duration: Double? = nil
     ) {
         self.item = item
+        self.engine = nil
         self.resourceLoader = resourceLoader
+        self.captions = captions
+        self.duration = duration
+    }
+
+    init(
+        engine: PlayerEngine,
+        captions: [SubtitleTrack] = [],
+        duration: Double? = nil
+    ) {
+        self.item = nil
+        self.engine = engine
+        self.resourceLoader = nil
         self.captions = captions
         self.duration = duration
     }

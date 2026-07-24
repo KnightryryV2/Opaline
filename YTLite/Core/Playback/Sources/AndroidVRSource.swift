@@ -5,7 +5,7 @@ import Foundation
 /// a SIDX-generated HLS stream (with native-HLS / progressive fallbacks). Owns
 /// quality selection from the DASH ladder.
 final class AndroidVRSource: VideoSource {
-    private static let noStreamError = NSError(
+    static let noStreamError = NSError(
         domain: "AndroidVRSource",
         code: 0,
         userInfo: [NSLocalizedDescriptionKey: "No playable stream"]
@@ -21,7 +21,7 @@ final class AndroidVRSource: VideoSource {
 
     private let apiClient: WatchService
     private let liveHLS: LiveHLSPlayback
-    private let client: DirectPlaybackClient = .androidVR
+    let client: DirectPlaybackClient = .androidVR
     private var info: DirectPlaybackInfo?
 
     init(apiClient: WatchService, resolver: HLSStreamResolver = .shared) {
@@ -152,6 +152,12 @@ final class AndroidVRSource: VideoSource {
         audio: DashFormatInfo,
         completion: @escaping (Result<PreparedPlayback, Error>) -> Void
     ) {
+        if Self.shouldUseSampleBuffer(video: video) {
+            buildSampleBuffer(
+                info: info, video: video, audio: audio, completion: completion
+            )
+            return
+        }
         let input = HLSPlaybackBuilder.BuildInput(
             videoURL: client.directURL(baseURL: video.url, poToken: nil),
             audioURL: client.directURL(baseURL: audio.url, poToken: nil),
