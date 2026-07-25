@@ -87,30 +87,91 @@ static CFDictionaryRef dav1d_shim_iosurface_backed_attrs(void) {
     return attrs;
 }
 
-static void dav1d_shim_attach_color(CVPixelBufferRef pixelBuffer) {
-    // BT.709 is a reasonable default for HD SDR content. Deriving exact
-    // primaries/transfer/matrix from pic.seq_hdr's color_description is a
-    // nice-to-have left for later; many 4K AV1 streams are 10-bit HDR
-    // (BT.2020/PQ or HLG) and will look off with this default — tracked as a
-    // known limitation of the v1 decode path, not fixed here.
+/// Maps an AV1/CICP color-primaries codepoint (Dav1dColorPrimaries) to the
+/// matching CoreVideo attachment value. Unknown/unrecognized values (2 is the
+/// explicit "unspecified" codepoint) fall back to BT.709, the pre-existing
+/// fixed default — never left untagged.
+static CFStringRef dav1d_shim_cv_primaries(uint8_t pri) {
+    switch (pri) {
+    case DAV1D_COLOR_PRI_BT2020:
+        return kCVImageBufferColorPrimaries_ITU_R_2020;
+    case DAV1D_COLOR_PRI_BT709:
+    default:
+        return kCVImageBufferColorPrimaries_ITU_R_709_2;
+    }
+}
+
+/// Maps an AV1/CICP transfer-characteristics codepoint
+/// (Dav1dTransferCharacteristics) to the matching CoreVideo attachment value.
+/// PQ (SMPTE ST 2084) and HLG are the two HDR transfer functions YouTube's
+/// av01 HDR rungs (itag 700/701) actually use. Both constants are available
+/// starting iOS 11.0 / macOS 10.13 — inside this app's iOS 12+ deployment
+/// target, so no #available guard is needed. Unknown/unrecognized values fall
+/// back to BT.709.
+static CFStringRef dav1d_shim_cv_transfer(uint8_t trc) {
+    switch (trc) {
+    case DAV1D_TRC_SMPTE2084:
+        return kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ;
+    case DAV1D_TRC_HLG:
+        return kCVImageBufferTransferFunction_ITU_R_2100_HLG;
+    case DAV1D_TRC_SRGB:
+        return kCVImageBufferTransferFunction_sRGB;
+    case DAV1D_TRC_BT2020_10BIT:
+    case DAV1D_TRC_BT2020_12BIT:
+        return kCVImageBufferTransferFunction_ITU_R_2020;
+    case DAV1D_TRC_BT709:
+    default:
+        return kCVImageBufferTransferFunction_ITU_R_709_2;
+    }
+}
+
+/// Maps an AV1/CICP matrix-coefficients codepoint (Dav1dMatrixCoefficients)
+/// to the matching CoreVideo attachment value. Unknown/unrecognized values
+/// fall back to BT.709.
+static CFStringRef dav1d_shim_cv_matrix(uint8_t mtrx) {
+    switch (mtrx) {
+    case DAV1D_MC_BT2020_NCL:
+    case DAV1D_MC_BT2020_CL:
+        return kCVImageBufferYCbCrMatrix_ITU_R_2020;
+    case DAV1D_MC_BT601:
+    case DAV1D_MC_BT470BG:
+        return kCVImageBufferYCbCrMatrix_ITU_R_601_4;
+    case DAV1D_MC_BT709:
+    default:
+        return kCVImageBufferYCbCrMatrix_ITU_R_709_2;
+    }
+}
+
+/// Tags a decoded pixel buffer with the color primaries/transfer/matrix
+/// resolved from the picture's AV1 sequence header (see
+/// dav1d_shim_decode_result_t doc comment for how unavailable info is
+/// represented). Pixel range (full vs. video) is NOT set here — CoreVideo has
+/// no attachment key for it; it's expressed by choosing the FullRange vs.
+/// VideoRange pixel format constant at CVPixelBufferCreate() time instead
+/// (see dav1d_shim_convert_8bit_i420 / _10bit_p010).
+static void dav1d_shim_attach_color(
+    CVPixelBufferRef pixelBuffer, uint8_t primaries, uint8_t transfer, uint8_t matrix) {
     CVBufferSetAttachment(pixelBuffer, kCVImageBufferColorPrimariesKey,
-                          kCVImageBufferColorPrimaries_ITU_R_709_2,
+                          dav1d_shim_cv_primaries(primaries),
                           kCVAttachmentMode_ShouldPropagate);
     CVBufferSetAttachment(pixelBuffer, kCVImageBufferTransferFunctionKey,
-                          kCVImageBufferTransferFunction_ITU_R_709_2,
+                          dav1d_shim_cv_transfer(transfer),
                           kCVAttachmentMode_ShouldPropagate);
     CVBufferSetAttachment(pixelBuffer, kCVImageBufferYCbCrMatrixKey,
-                          kCVImageBufferYCbCrMatrix_ITU_R_709_2,
+                          dav1d_shim_cv_matrix(matrix),
                           kCVAttachmentMode_ShouldPropagate);
 }
 
 /// Converts an 8-bit 4:2:0 Dav1dPicture into a triplanar I420 CVPixelBuffer.
-static CVPixelBufferRef dav1d_shim_convert_8bit_i420(const Dav1dPicture *pic) {
+static CVPixelBufferRef dav1d_shim_convert_8bit_i420(const Dav1dPicture *pic, uint8_t fullRange) {
+    OSType pixelFormat = fullRange
+        ? kCVPixelFormatType_420YpCbCr8PlanarFullRange
+        : kCVPixelFormatType_420YpCbCr8Planar;
     CFDictionaryRef attrs = dav1d_shim_iosurface_backed_attrs();
     CVPixelBufferRef pixelBuffer = NULL;
     CVReturn status = CVPixelBufferCreate(kCFAllocatorDefault,
                                           (size_t)pic->p.w, (size_t)pic->p.h,
-                                          kCVPixelFormatType_420YpCbCr8Planar,
+                                          pixelFormat,
                                           attrs, &pixelBuffer);
     CFRelease(attrs);
     if (status != kCVReturnSuccess || pixelBuffer == NULL) {
@@ -149,12 +210,15 @@ static CVPixelBufferRef dav1d_shim_convert_8bit_i420(const Dav1dPicture *pic) {
 /// depth, so this interleaves U/V into one plane and left-shifts each 10-bit
 /// sample (stored in the low bits of a 16-bit word) into P010's high-bit
 /// packing.
-static CVPixelBufferRef dav1d_shim_convert_10bit_p010(const Dav1dPicture *pic) {
+static CVPixelBufferRef dav1d_shim_convert_10bit_p010(const Dav1dPicture *pic, uint8_t fullRange) {
+    OSType pixelFormat = fullRange
+        ? kCVPixelFormatType_420YpCbCr10BiPlanarFullRange
+        : kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange;
     CFDictionaryRef attrs = dav1d_shim_iosurface_backed_attrs();
     CVPixelBufferRef pixelBuffer = NULL;
     CVReturn status = CVPixelBufferCreate(kCFAllocatorDefault,
                                           (size_t)pic->p.w, (size_t)pic->p.h,
-                                          kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange,
+                                          pixelFormat,
                                           attrs, &pixelBuffer);
     CFRelease(attrs);
     if (status != kCVReturnSuccess || pixelBuffer == NULL) {
@@ -210,6 +274,10 @@ CVPixelBufferRef dav1d_shim_decode(
     outResult->width = 0;
     outResult->height = 0;
     outResult->bitDepth = 0;
+    outResult->colorPrimaries = 0;
+    outResult->transferCharacteristics = 0;
+    outResult->matrixCoefficients = 0;
+    outResult->colorRangeFull = 0;
 
     if (ctx == NULL || obu == NULL || len == 0) {
         return NULL;
@@ -279,6 +347,27 @@ CVPixelBufferRef dav1d_shim_decode(
     outResult->height = picture.p.h;
     outResult->bitDepth = picture.p.bpc;
 
+    // The sequence header carries the stream's CICP color description.
+    // dav1d attaches the active one to every output picture, but guard the
+    // pointer anyway (e.g. a picture decoded before any seq OBU arrived) and
+    // fall back to the "unspecified" CICP codepoint (2 for all three of
+    // primaries/transfer/matrix), which dav1d_shim_attach_color resolves to
+    // BT.709 — the pre-existing default.
+    uint8_t primaries = DAV1D_COLOR_PRI_UNKNOWN;
+    uint8_t transfer = DAV1D_TRC_UNKNOWN;
+    uint8_t matrix = DAV1D_MC_UNKNOWN;
+    uint8_t fullRange = 0;
+    if (picture.seq_hdr != NULL) {
+        primaries = (uint8_t)picture.seq_hdr->pri;
+        transfer = (uint8_t)picture.seq_hdr->trc;
+        matrix = (uint8_t)picture.seq_hdr->mtrx;
+        fullRange = picture.seq_hdr->color_range;
+    }
+    outResult->colorPrimaries = primaries;
+    outResult->transferCharacteristics = transfer;
+    outResult->matrixCoefficients = matrix;
+    outResult->colorRangeFull = fullRange;
+
     int layoutSupported =
         (picture.p.bpc == 8 || picture.p.bpc == 10) && picture.p.layout == DAV1D_PIXEL_LAYOUT_I420;
     if (!layoutSupported) {
@@ -289,8 +378,8 @@ CVPixelBufferRef dav1d_shim_decode(
     }
 
     CVPixelBufferRef pixelBuffer = picture.p.bpc == 8
-        ? dav1d_shim_convert_8bit_i420(&picture)
-        : dav1d_shim_convert_10bit_p010(&picture);
+        ? dav1d_shim_convert_8bit_i420(&picture, fullRange)
+        : dav1d_shim_convert_10bit_p010(&picture, fullRange);
     dav1d_picture_unref(&picture);
 
     if (pixelBuffer == NULL) {
@@ -301,7 +390,7 @@ CVPixelBufferRef dav1d_shim_decode(
         return NULL;
     }
 
-    dav1d_shim_attach_color(pixelBuffer);
+    dav1d_shim_attach_color(pixelBuffer, primaries, transfer, matrix);
     outResult->status = DAV1D_SHIM_STATUS_OK;
     return pixelBuffer;
 }
@@ -326,6 +415,10 @@ CVPixelBufferRef dav1d_shim_decode(
     outResult->width = 0;
     outResult->height = 0;
     outResult->bitDepth = 0;
+    outResult->colorPrimaries = 0;
+    outResult->transferCharacteristics = 0;
+    outResult->matrixCoefficients = 0;
+    outResult->colorRangeFull = 0;
     return 0;
 }
 

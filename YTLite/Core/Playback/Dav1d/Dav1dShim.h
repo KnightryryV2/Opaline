@@ -56,6 +56,19 @@ typedef struct {
     /// dav1d's `Dav1dPicture.p.bpc`, valid for the same statuses as
     /// width/height.
     int bitDepth;
+    /// Raw AV1/CICP color description resolved for this picture (dav1d's
+    /// Dav1dColorPrimaries / Dav1dTransferCharacteristics /
+    /// Dav1dMatrixCoefficients enum values — see dav1d/headers.h), valid only
+    /// for `OK`. When the picture carries no sequence header these read back
+    /// as the CICP "unspecified" codepoint (2), which the shim's color
+    /// mapping resolves to BT.709 — i.e. today's default.
+    uint8_t colorPrimaries;
+    uint8_t transferCharacteristics;
+    uint8_t matrixCoefficients;
+    /// 1 if the picture uses full-range (JPEG) sample values, 0 for
+    /// video/limited range (MPEG) — dav1d's `Dav1dSequenceHeader.color_range`.
+    /// Valid only for `OK`.
+    uint8_t colorRangeFull;
 } dav1d_shim_decode_result_t;
 
 /// dav1d's API version string (e.g. "1.5.1"), or NULL when dav1d is not linked
@@ -85,12 +98,14 @@ void dav1d_shim_destroy(void *ctx);
 /// there is no background thread holding a reference to `obu` afterwards.
 ///
 /// Pixel format of the returned buffer:
-///  - 8-bit 4:2:0 streams  -> kCVPixelFormatType_420YpCbCr8Planar (I420)
-///  - 10-bit 4:2:0 streams -> kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange (P010)
+///  - 8-bit 4:2:0 streams  -> kCVPixelFormatType_420YpCbCr8Planar(FullRange) (I420)
+///  - 10-bit 4:2:0 streams -> kCVPixelFormatType_420YpCbCr10BiPlanar(Video|Full)Range (P010)
 ///  - anything else (4:2:2, 4:4:4, monochrome) -> NULL; caller must fall back.
-/// Color attachments are set to BT.709 primaries/transfer/matrix as a
-/// reasonable default for HD content (deriving exact values from the AV1
-/// sequence header is a nice-to-have left for later).
+/// The Video/FullRange variant is chosen from the picture's sequence header
+/// color_range. Color primaries/transfer/matrix attachments are derived from
+/// the same sequence header's CICP color description (BT.709 SDR, BT.2020
+/// SDR, PQ, HLG, sRGB — see Dav1dShim.c); unknown/unrecognized values fall
+/// back to BT.709, matching the old fixed default.
 ///
 /// CF_RETURNS_RETAINED: this really does hand back a +1 reference (the C
 /// implementation CVPixelBufferCreate()s a fresh buffer per call and never

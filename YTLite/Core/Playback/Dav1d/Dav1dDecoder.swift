@@ -77,10 +77,29 @@ final class Dav1dDecoder {
         }
     }
 
+    /// CICP (AV1/H.273) codepoint -> readable name, used only for the
+    /// once-per-instance color log in `logColorInfoOnce`. Not exhaustive —
+    /// just the values `Dav1dShim.c`'s color mapping actually branches on;
+    /// anything else prints as `other(N)`.
+    private static let primariesNames: [UInt8: String] = [
+        1: "BT.709", 2: "unspecified", 9: "BT.2020"
+    ]
+    private static let transferNames: [UInt8: String] = [
+        1: "BT.709", 2: "unspecified", 13: "sRGB", 14: "BT.2020-10bit", 15: "BT.2020-12bit",
+        16: "PQ", 18: "HLG"
+    ]
+    private static let matrixNames: [UInt8: String] = [
+        1: "BT.709", 2: "unspecified", 5: "BT.470BG", 6: "BT.601",
+        9: "BT.2020-NCL", 10: "BT.2020-CL"
+    ]
+
     private var ctx: UnsafeMutableRawPointer?
     /// Reasons already logged once — see `decode(_:)`. feedQueue-confined,
     /// same as every other member here.
     private var loggedReasons: Set<String> = []
+    /// Whether the resolved color description (see `logColorInfoOnce`) has
+    /// already been logged for this decoder instance. feedQueue-confined.
+    private var loggedColorInfo = false
 
     /// - Returns: `nil` when dav1d is unavailable — the simulator build
     ///   (no arm64 slice) or a `dav1d_open` failure. Callers must fall back
@@ -90,6 +109,10 @@ final class Dav1dDecoder {
             return nil
         }
         ctx = context
+    }
+
+    private static func cicpName(_ value: UInt8, table: [UInt8: String]) -> String {
+        table[value] ?? "other(\(value))"
     }
 
     /// Decodes one av01 sample's raw OBU bytes, logging the failure reason
@@ -104,7 +127,15 @@ final class Dav1dDecoder {
             return nil
         }
         var result = dav1d_shim_decode_result_t(
-            status: DAV1D_SHIM_STATUS_INVALID_ARGS, errorCode: 0, width: 0, height: 0, bitDepth: 0
+            status: DAV1D_SHIM_STATUS_INVALID_ARGS,
+            errorCode: 0,
+            width: 0,
+            height: 0,
+            bitDepth: 0,
+            colorPrimaries: 0,
+            transferCharacteristics: 0,
+            matrixCoefficients: 0,
+            colorRangeFull: 0
         )
         let pixelBuffer = obu.withUnsafeBytes { rawBuffer -> CVPixelBuffer? in
             guard let base = rawBuffer.bindMemory(to: UInt8.self).baseAddress else {
@@ -113,6 +144,7 @@ final class Dav1dDecoder {
             return dav1d_shim_decode(ctx, base, rawBuffer.count, &result)
         }
         if let pixelBuffer {
+            logColorInfoOnce(result)
             return pixelBuffer
         }
         logFailureOnce(result)
@@ -129,6 +161,26 @@ final class Dav1dDecoder {
         }
         loggedReasons.insert(reason)
         AppLog.log("Dav1dDecoder", "decode produced no picture: \(reason)")
+    }
+
+    /// Logs the color description resolved from the first decoded picture's
+    /// AV1 sequence header — once per decoder instance (one dav1d decoder per
+    /// playback), not per frame, so a device run confirms what the pixel
+    /// buffers were actually tagged with without spamming the log at frame
+    /// rate.
+    private func logColorInfoOnce(_ result: dav1d_shim_decode_result_t) {
+        guard !loggedColorInfo else {
+            return
+        }
+        loggedColorInfo = true
+        let range = result.colorRangeFull != 0 ? "full" : "video"
+        let primaries = Self.cicpName(result.colorPrimaries, table: Self.primariesNames)
+        let transfer = Self.cicpName(result.transferCharacteristics, table: Self.transferNames)
+        let matrix = Self.cicpName(result.matrixCoefficients, table: Self.matrixNames)
+        AppLog.log(
+            "Dav1dDecoder",
+            "color: primaries=\(primaries) transfer=\(transfer) matrix=\(matrix) range=\(range)"
+        )
     }
 
     /// Drops dav1d's internal picture queue and reference frames after a
