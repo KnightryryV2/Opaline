@@ -14,6 +14,50 @@
 
 #import <CoreVideo/CoreVideo.h>
 
+/// Why a `dav1d_shim_decode()` call produced no picture (or why it did,
+/// distinguishing the ordinary success case) — see that function's doc
+/// comment for what to do with each value.
+typedef enum {
+    /// A picture was produced; the returned `CVPixelBufferRef` is non-NULL.
+    DAV1D_SHIM_STATUS_OK = 0,
+    /// Bad arguments (NULL ctx/obu or zero len) — a caller bug, not a stream
+    /// or device condition.
+    DAV1D_SHIM_STATUS_INVALID_ARGS,
+    /// `dav1d_send_data()` returned a hard error; `errorCode` is dav1d's
+    /// negative errno.
+    DAV1D_SHIM_STATUS_SEND_ERROR,
+    /// The sample was consumed but no picture is ready yet (dav1d signaled
+    /// EAGAIN from `dav1d_get_picture()`). Not a failure — expected on
+    /// decoder warm-up.
+    DAV1D_SHIM_STATUS_NO_PICTURE_YET,
+    /// `dav1d_get_picture()` returned a hard (non-EAGAIN) error; `errorCode`
+    /// is dav1d's negative errno.
+    DAV1D_SHIM_STATUS_GET_PICTURE_ERROR,
+    /// A picture decoded successfully but its chroma layout/bit depth isn't
+    /// one this shim converts (only 8-bit and 10-bit 4:2:0 are handled).
+    /// `width`/`height`/`bitDepth` describe the picture that was dropped.
+    DAV1D_SHIM_STATUS_UNSUPPORTED_LAYOUT,
+    /// A picture decoded successfully but `CVPixelBufferCreate()` failed —
+    /// most likely memory pressure at large frame sizes. `width`/`height`
+    /// describe the allocation that failed.
+    DAV1D_SHIM_STATUS_ALLOC_FAILED
+} dav1d_shim_status_t;
+
+/// Out-parameter for `dav1d_shim_decode()`, filled in on every call
+/// regardless of outcome.
+typedef struct {
+    dav1d_shim_status_t status;
+    /// dav1d's negative errno for `*_ERROR` statuses, 0 otherwise.
+    int errorCode;
+    /// Picture dimensions, valid for `OK`/`UNSUPPORTED_LAYOUT`/`ALLOC_FAILED`
+    /// (0 otherwise — no picture was decoded to measure).
+    int width;
+    int height;
+    /// dav1d's `Dav1dPicture.p.bpc`, valid for the same statuses as
+    /// width/height.
+    int bitDepth;
+} dav1d_shim_decode_result_t;
+
 /// dav1d's API version string (e.g. "1.5.1"), or NULL when dav1d is not linked
 /// (simulator). Referencing this from Swift also anchors the static library
 /// into the link.
@@ -54,6 +98,18 @@ void dav1d_shim_destroy(void *ctx);
 /// an unmanaged pointer, and callers going through `.takeUnretainedValue()`
 /// would leak every frame; with it, Swift imports a plain `CVPixelBuffer?`
 /// that ARC balances correctly on scope exit.
-CF_RETURNS_RETAINED CVPixelBufferRef dav1d_shim_decode(void *ctx, const uint8_t *obu, size_t len);
+///
+/// `outResult` must be non-NULL; it's filled in unconditionally so the
+/// caller can log *why* a NULL return happened (see `dav1d_shim_status_t`).
+CF_RETURNS_RETAINED CVPixelBufferRef dav1d_shim_decode(
+    void *ctx, const uint8_t *obu, size_t len, dav1d_shim_decode_result_t *outResult);
+
+/// Drops the decoder's internal picture queue and reference frames. Call
+/// this on a seek/discontinuity — after one, the next OBU sample fed to
+/// dav1d_shim_decode() no longer follows the previously-decoded stream
+/// position, and without a flush dav1d_get_picture() can hand back a
+/// picture decoded from the pre-seek position. Safe to call with NULL
+/// (no-op).
+void dav1d_shim_flush(void *ctx);
 
 #endif /* DAV1D_SHIM_H */

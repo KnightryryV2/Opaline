@@ -2,60 +2,62 @@ import CoreMedia
 import CoreVideo
 import Foundation
 
-/// Wraps every av01 sample of one fMP4 media segment into `CMSampleBuffer`s
-/// ready for `AVSampleBufferDisplayLayer` enqueueing, decoding each sample
-/// to a `CVPixelBuffer` via dav1d first (unlike `SampleBufferFactory`, which
-/// hands VideoToolbox-decodable formats straight through as compressed
-/// samples).
+/// Turns av01 samples into `CMSampleBuffer`s for `AVSampleBufferDisplayLayer`,
+/// decoding each sample to a `CVPixelBuffer` via dav1d (unlike
+/// `SampleBufferFactory`, which hands VideoToolbox-decodable formats straight
+/// through as compressed samples).
+///
+/// Split into two halves that run at different times, on purpose: the FIFO
+/// must hold *compressed* OBU bytes, never decoded pixel buffers, 10s of
+/// which would be a 900 MB+ memory bomb at 1080p (see `TrackProducer.
+/// PendingSample`). So `planDecodeTicks` runs at fetch time (cheap, no
+/// decode) to compute each sample's timing, and `makeSampleBuffer` — the
+/// actual dav1d call — runs lazily in `TrackProducer.dequeue()`, a handful of
+/// frames ahead of the renderer.
 ///
 /// Timing scheme mirrors `SampleBufferFactory` exactly: cumulative
 /// `decodeTicks` from `segmentStart`, presentation = decode + `ctsOffset`.
 enum Av01SampleBufferFactory {
     // MARK: - Type methods
 
-    // swiftlint:disable function_parameter_count
-    /// - Parameters:
-    ///   - segment: The full media-segment bytes (`moof`+`mdat`); a
-    ///     sample's bytes are raw OBUs, fed to `decoder` as-is.
-    ///   - samples: `FMP4SampleTable.parse` output; offsets are absolute
-    ///     within `segment`.
-    ///   - decoder: MUST only be driven from one serial queue (see
-    ///     `Dav1dDecoder`); this call decodes every sample synchronously,
-    ///     in order, on whatever queue it's called from.
-    ///   - segmentStart: This segment's presentation start, in seconds.
-    ///   - timescale: The track timescale `FMP4Sample.duration`/`ctsOffset`
-    ///     are expressed in.
-    static func make(
-        segment: Data,
+    /// Computes each sample's cumulative `decodeTicks` without decoding
+    /// anything — the fetch-time half of this factory. Same arithmetic as
+    /// `SampleBufferFactory.make`: ticks (not `CMTimeConvertScale`) because
+    /// `segmentStart` and the sample durations already share `timescale`.
+    ///
+    /// - Returns: One entry per input sample, same order, pairing it with
+    ///   the decode-time tick its `CMSampleBuffer` will need.
+    static func planDecodeTicks(
         samples: [FMP4Sample],
-        decoder: Dav1dDecoder,
         segmentStart: Double,
         timescale: CMTimeScale
-    ) -> [CMSampleBuffer] {
-        // Same non-CMTimeConvertScale reasoning as SampleBufferFactory:
-        // segmentStart and the sample durations already share timescale.
+    ) -> [(sample: FMP4Sample, decodeTicks: Int64)] {
         let tickOffset = Int64((segmentStart * Double(timescale)).rounded())
-        var buffers: [CMSampleBuffer] = []
-        buffers.reserveCapacity(samples.count)
+        var planned: [(sample: FMP4Sample, decodeTicks: Int64)] = []
+        planned.reserveCapacity(samples.count)
         var decodeTicks = tickOffset
         for sample in samples {
-            if let buffer = makeSampleBuffer(
-                segment: segment,
-                sample: sample,
-                decoder: decoder,
-                decodeTicks: decodeTicks,
-                timescale: timescale
-            ) {
-                buffers.append(buffer)
-            }
-            // Advance regardless of decode success so later samples' timing
-            // stays aligned with the segment's real presentation clock.
+            planned.append((sample, decodeTicks))
             decodeTicks += Int64(sample.duration)
         }
-        return buffers
+        return planned
     }
 
-    private static func makeSampleBuffer(
+    // swiftlint:disable function_parameter_count
+    /// Decodes one sample via dav1d and wraps the resulting picture into a
+    /// `CMSampleBuffer`. Called from `TrackProducer.dequeue()`, on demand —
+    /// never ahead of what the renderer is about to consume.
+    ///
+    /// - Parameters:
+    ///   - segment: The full media-segment bytes (`moof`+`mdat`) this sample
+    ///     came from; its bytes are raw OBUs, fed to `decoder` as-is.
+    ///   - decoder: MUST only be driven from one serial queue (see
+    ///     `Dav1dDecoder`) — `dequeue()` is feedQueue-only, which satisfies
+    ///     that.
+    ///   - decodeTicks: From `planDecodeTicks`.
+    ///   - timescale: The track timescale `FMP4Sample.duration`/`ctsOffset`
+    ///     are expressed in.
+    static func makeSampleBuffer(
         segment: Data,
         sample: FMP4Sample,
         decoder: Dav1dDecoder,
@@ -68,9 +70,10 @@ enum Av01SampleBufferFactory {
         else {
             return nil
         }
+        // `decoder.decode` logs the failure reason itself (rate-limited,
+        // see `Dav1dDecoder`) — nothing more to report here.
         let obu = segment.subdata(in: sample.offset..<(sample.offset + sample.size))
         guard let pixelBuffer = decoder.decode(obu) else {
-            AppLog.log("Av01SampleBufferFactory", "decode produced no picture, skipping sample")
             return nil
         }
         guard let format = formatDescription(for: pixelBuffer) else {

@@ -15,8 +15,19 @@ extension AndroidVRSource {
         let headers: [String: String]
     }
 
-    /// Gated to avc1 ≤1080p behind the hidden `forceSampleBufferEngine` flag.
+    /// av01 always needs this engine — AVPlayer can't decode it without
+    /// hardware, and a hardware-capable device never reaches here in the
+    /// first place (it takes the cheaper, device-verified generated-HLS/
+    /// AVPlayer route instead) — *unless* Debug Toggle A
+    /// (`AV1Support.isForceSoftwareDecoder`) is on, in which case av01
+    /// routes through dav1d even on hardware-AV1 devices, so the software
+    /// decoder can be validated independently of hardware availability. See
+    /// `AV1Support.isSoftwareDecodeRoute`. avc1 stays gated behind the
+    /// hidden `forceSampleBufferEngine` debug flag, unrelated to AV1.
     static func shouldUseSampleBuffer(video: DashFormatInfo) -> Bool {
+        if video.codecs.hasPrefix("av01") {
+            return AV1Support.isSoftwareDecodeRoute
+        }
         guard UserDefaults.standard.bool(
             forKey: UserDefaultsKeys.Debug.forceSampleBufferEngine
         ) else {
@@ -58,12 +69,14 @@ extension AndroidVRSource {
         let videoTrack = SampleBufferTrack(
             url: video.url,
             headers: video.headers,
-            index: videoIndex
+            index: videoIndex,
+            isAV1: video.format.codecs.hasPrefix("av01")
         )
         let audioTrack = SampleBufferTrack(
             url: audio.url,
             headers: audio.headers,
-            index: audioIndex
+            index: audioIndex,
+            isAV1: false
         )
         let engine = SampleBufferEngine(
             video: videoTrack,

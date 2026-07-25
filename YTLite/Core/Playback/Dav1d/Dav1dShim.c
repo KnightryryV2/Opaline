@@ -53,6 +53,13 @@ void dav1d_shim_destroy(void *ctx) {
     dav1d_close(&context);
 }
 
+void dav1d_shim_flush(void *ctx) {
+    if (ctx == NULL) {
+        return;
+    }
+    dav1d_flush((Dav1dContext *)ctx);
+}
+
 static void dav1d_shim_noop_free(const uint8_t *buf, void *cookie) {
     (void)buf;
     (void)cookie;
@@ -196,7 +203,14 @@ static CVPixelBufferRef dav1d_shim_convert_10bit_p010(const Dav1dPicture *pic) {
     return pixelBuffer;
 }
 
-CVPixelBufferRef dav1d_shim_decode(void *ctx, const uint8_t *obu, size_t len) {
+CVPixelBufferRef dav1d_shim_decode(
+    void *ctx, const uint8_t *obu, size_t len, dav1d_shim_decode_result_t *outResult) {
+    outResult->status = DAV1D_SHIM_STATUS_INVALID_ARGS;
+    outResult->errorCode = 0;
+    outResult->width = 0;
+    outResult->height = 0;
+    outResult->bitDepth = 0;
+
     if (ctx == NULL || obu == NULL || len == 0) {
         return NULL;
     }
@@ -204,7 +218,10 @@ CVPixelBufferRef dav1d_shim_decode(void *ctx, const uint8_t *obu, size_t len) {
 
     Dav1dData data;
     memset(&data, 0, sizeof(data));
-    if (dav1d_data_wrap(&data, obu, len, dav1d_shim_noop_free, NULL) < 0) {
+    int wrapResult = dav1d_data_wrap(&data, obu, len, dav1d_shim_noop_free, NULL);
+    if (wrapResult < 0) {
+        outResult->status = DAV1D_SHIM_STATUS_SEND_ERROR;
+        outResult->errorCode = wrapResult;
         return NULL;
     }
 
@@ -231,6 +248,7 @@ CVPixelBufferRef dav1d_shim_decode(void *ctx, const uint8_t *obu, size_t len) {
             continue;
         }
         sendError = 1;
+        outResult->errorCode = sendResult;
         break;
     }
 
@@ -240,29 +258,51 @@ CVPixelBufferRef dav1d_shim_decode(void *ctx, const uint8_t *obu, size_t len) {
     dav1d_data_unref(&data);
 
     if (sendError) {
+        outResult->status = DAV1D_SHIM_STATUS_SEND_ERROR;
         return NULL;
     }
 
     Dav1dPicture picture;
     memset(&picture, 0, sizeof(picture));
-    if (dav1d_get_picture(context, &picture) != 0) {
-        // EAGAIN (still buffering) or an error: no picture produced this call.
+    int getResult = dav1d_get_picture(context, &picture);
+    if (getResult != 0) {
+        if (getResult == DAV1D_ERR(EAGAIN)) {
+            outResult->status = DAV1D_SHIM_STATUS_NO_PICTURE_YET;
+        } else {
+            outResult->status = DAV1D_SHIM_STATUS_GET_PICTURE_ERROR;
+            outResult->errorCode = getResult;
+        }
         return NULL;
     }
 
-    CVPixelBufferRef pixelBuffer = NULL;
-    if (picture.p.bpc == 8 && picture.p.layout == DAV1D_PIXEL_LAYOUT_I420) {
-        pixelBuffer = dav1d_shim_convert_8bit_i420(&picture);
-    } else if (picture.p.bpc == 10 && picture.p.layout == DAV1D_PIXEL_LAYOUT_I420) {
-        pixelBuffer = dav1d_shim_convert_10bit_p010(&picture);
+    outResult->width = picture.p.w;
+    outResult->height = picture.p.h;
+    outResult->bitDepth = picture.p.bpc;
+
+    int layoutSupported =
+        (picture.p.bpc == 8 || picture.p.bpc == 10) && picture.p.layout == DAV1D_PIXEL_LAYOUT_I420;
+    if (!layoutSupported) {
+        // Other layouts (4:2:2, 4:4:4, monochrome) aren't handled.
+        dav1d_picture_unref(&picture);
+        outResult->status = DAV1D_SHIM_STATUS_UNSUPPORTED_LAYOUT;
+        return NULL;
     }
-    // Other layouts (4:2:2, 4:4:4, monochrome) aren't handled: pixelBuffer
-    // stays NULL and the caller falls back.
+
+    CVPixelBufferRef pixelBuffer = picture.p.bpc == 8
+        ? dav1d_shim_convert_8bit_i420(&picture)
+        : dav1d_shim_convert_10bit_p010(&picture);
     dav1d_picture_unref(&picture);
 
-    if (pixelBuffer != NULL) {
-        dav1d_shim_attach_color(pixelBuffer);
+    if (pixelBuffer == NULL) {
+        // Layout was supported, so the only way convert_* returns NULL is
+        // CVPixelBufferCreate() failing — most likely memory pressure at
+        // large (4K) frame sizes on constrained devices.
+        outResult->status = DAV1D_SHIM_STATUS_ALLOC_FAILED;
+        return NULL;
     }
+
+    dav1d_shim_attach_color(pixelBuffer);
+    outResult->status = DAV1D_SHIM_STATUS_OK;
     return pixelBuffer;
 }
 
@@ -276,11 +316,21 @@ void dav1d_shim_destroy(void *ctx) {
     (void)ctx;
 }
 
-CVPixelBufferRef dav1d_shim_decode(void *ctx, const uint8_t *obu, size_t len) {
+CVPixelBufferRef dav1d_shim_decode(
+    void *ctx, const uint8_t *obu, size_t len, dav1d_shim_decode_result_t *outResult) {
     (void)ctx;
     (void)obu;
     (void)len;
+    outResult->status = DAV1D_SHIM_STATUS_INVALID_ARGS;
+    outResult->errorCode = 0;
+    outResult->width = 0;
+    outResult->height = 0;
+    outResult->bitDepth = 0;
     return 0;
+}
+
+void dav1d_shim_flush(void *ctx) {
+    (void)ctx;
 }
 
 const char *dav1d_shim_version(void) {
