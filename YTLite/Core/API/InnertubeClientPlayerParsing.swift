@@ -180,10 +180,32 @@ private extension InnertubeClient {
         guard mime.contains("av01") else {
             return mime.contains("avc1")
         }
-        return AV1Support.isAV01Admitted(
+        guard fmtIsHDR(mime) else {
+            return AV1Support.isAV01Admitted(
+                atHeight: fmtHeight(fmt),
+                allowsSoftwareAV1: allowsSoftwareAV1
+            )
+        }
+        return AV1Support.isHDRAV01Admitted(
             atHeight: fmtHeight(fmt),
             allowsSoftwareAV1: allowsSoftwareAV1
         )
+    }
+
+    /// PQ/HLG detection from an av01 codec string's CICP transfer field
+    /// (`av01.P.LLT.DD.M.CCC.cp.tc.mc.F` — `tc` is 16 for PQ, 18 for HLG).
+    /// Short 4-field strings carry no colour description and are SDR.
+    static func fmtIsHDR(_ mime: String) -> Bool {
+        guard let range = mime.range(of: "av01."),
+              let end = mime[range.lowerBound...].firstIndex(where: { $0 == "\"" || $0 == "," })
+        else {
+            return false
+        }
+        let parts = mime[range.lowerBound..<end].split(separator: ".")
+        guard parts.count >= 8 else {
+            return false
+        }
+        return parts[7] == "16" || parts[7] == "18"
     }
 
     static func selectBestVideo(

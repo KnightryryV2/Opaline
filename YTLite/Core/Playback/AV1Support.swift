@@ -118,4 +118,21 @@ enum AV1Support {
                 && isForceSoftwareDecoder
                 && (height > 1_080 || isForceAV1LowRes))
     }
+
+    /// Same gate for an HDR (PQ/HLG) av01 format, which has an extra
+    /// restriction: **hardware decode cannot play it here.** Measured on an
+    /// A18 Pro — an HDR variant tagged `VIDEO-RANGE=PQ` is refused with
+    /// `NSURLErrorUnsupportedURL` before a single byte is fetched, because
+    /// AVFoundation's HDR path won't take our `ytv-hls://` custom scheme
+    /// through `AVAssetResourceLoader`; drop the tag and it reads the
+    /// playlists, then rejects the PQ content as mis-declared (-12927). SDR
+    /// av01 over the same generated HLS plays fine, so it is the HDR pipeline
+    /// specifically. Serving the playlists from a local HTTP server would
+    /// lift this; until then an HDR rung is only offered when the software
+    /// (dav1d) engine will be the one playing it — where HDR is
+    /// device-verified working.
+    static func isHDRAV01Admitted(atHeight height: Int, allowsSoftwareAV1: Bool = true) -> Bool {
+        isAV01Admitted(atHeight: height, allowsSoftwareAV1: allowsSoftwareAV1)
+            && isSoftwareDecodeRoute
+    }
 }
