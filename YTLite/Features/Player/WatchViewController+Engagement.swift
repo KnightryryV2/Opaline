@@ -14,7 +14,7 @@ extension WatchViewController {
         backgroundEnteredAt = Date()
         // Layer/PiP background handling lives in VideoPlayerView.
         if !bgEnabled {
-            videoPlayerView?.player?.pause()
+            videoPlayerView?.engine?.pause()
         }
     }
 

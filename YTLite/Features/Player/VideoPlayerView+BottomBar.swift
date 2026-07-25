@@ -36,7 +36,7 @@ extension VideoPlayerView {
         }
         seekBar.onScrubEnd = { [weak self] progress in
             guard let self,
-                  let currentPlayer = self.player
+                  let engine = self.engine
             else {
                 return
             }
@@ -44,10 +44,11 @@ extension VideoPlayerView {
                 seconds: progress * self.duration,
                 preferredTimescale: 600
             )
-            currentPlayer.seek(
+            engine.seek(
                 to: target,
                 toleranceBefore: .zero,
-                toleranceAfter: .zero
+                toleranceAfter: .zero,
+                completion: nil
             )
             self.scheduleAutoHide()
         }

@@ -49,15 +49,16 @@ final class SponsorBlockController {
         let behavior = SponsorBlockService.skipBehavior(for: seg.category)
         switch behavior {
         case .autoSkip:
-            guard let player = playerView?.player
+            guard let engine = playerView?.engine
             else { return }
             let target = CMTime(
                 seconds: seg.endTime, preferredTimescale: 600
             )
-            player.seek(
+            engine.seek(
                 to: target,
                 toleranceBefore: .zero,
-                toleranceAfter: .zero
+                toleranceAfter: .zero,
+                completion: nil
             )
             AppLog.sponsorBlock(
                 "auto-skipped \(seg.category.displayName) "
@@ -75,10 +76,10 @@ final class SponsorBlockController {
     func skipCurrentSegment() {
         guard let uuid = activeSegmentUUID,
               let seg  = segments.first(where: { $0.uuid == uuid }),
-              let player = playerView?.player
+              let engine = playerView?.engine
         else { return }
         let target = CMTime(seconds: seg.endTime, preferredTimescale: 600)
-        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
+        engine.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero, completion: nil)
         activeSegmentUUID = nil
         playerView?.hideSkipButton()
         AppLog.sponsorBlock(

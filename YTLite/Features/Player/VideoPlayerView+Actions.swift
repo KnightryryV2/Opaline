@@ -81,7 +81,7 @@ extension VideoPlayerView {
         hideWorkItem?.cancel()
         let item = DispatchWorkItem { [weak self] in
             guard let self,
-                  self.player?.rate ?? 0 > 0
+                  self.engine?.isPlaying == true
             else {
                 return
             }
@@ -107,20 +107,20 @@ extension VideoPlayerView {
 extension VideoPlayerView {
     @objc
     func playPauseTapped() {
-        guard let player else {
+        guard let engine else {
             return
         }
-        if player.rate > 0 {
-            player.pause()
+        if engine.isPlaying {
+            engine.pause()
         } else {
-            player.play()
+            engine.play()
         }
         scheduleAutoHide()
     }
 
     @objc
     func rewindTapped() {
-        guard let player else {
+        guard let engine else {
             return
         }
         let offset = CMTime(
@@ -128,31 +128,33 @@ extension VideoPlayerView {
             preferredTimescale: 600
         )
         let newTime = max(
-            player.currentTime() - offset,
+            engine.currentTime - offset,
             .zero
         )
-        player.seek(
+        engine.seek(
             to: newTime,
             toleranceBefore: .zero,
-            toleranceAfter: .zero
+            toleranceAfter: .zero,
+            completion: nil
         )
         scheduleAutoHide()
     }
 
     @objc
     func forwardTapped() {
-        guard let player else {
+        guard let engine else {
             return
         }
         let offset = CMTime(
             seconds: 10,
             preferredTimescale: 600
         )
-        let newTime = player.currentTime() + offset
-        player.seek(
+        let newTime = engine.currentTime + offset
+        engine.seek(
             to: newTime,
             toleranceBefore: .zero,
-            toleranceAfter: .zero
+            toleranceAfter: .zero,
+            completion: nil
         )
         scheduleAutoHide()
     }
@@ -178,7 +180,7 @@ extension VideoPlayerView {
 
 extension VideoPlayerView {
     func updatePlayPauseIcon() {
-        let isPlaying = (player?.rate ?? 0) > 0
+        let isPlaying = engine?.isPlaying == true
         let icon = isPlaying
             ? PlayerIcons.pause()
             : PlayerIcons.play()

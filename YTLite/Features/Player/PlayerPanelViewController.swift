@@ -104,7 +104,7 @@ final class PlayerPanelViewController: UIViewController, UIGestureRecognizerDele
 
     func close() {
         watchVC.exitFullscreenIfNeeded()
-        watchVC.videoPlayerView?.player?.pause()
+        watchVC.videoPlayerView?.engine?.pause()
         miniBar?.layer.removeAllAnimations()
         miniBar?.transform = .identity
         guard let tabBarController = parent as? MainTabBarController else {
@@ -116,15 +116,14 @@ final class PlayerPanelViewController: UIViewController, UIGestureRecognizerDele
     }
 
     func refreshMiniBar() {
-        let player = watchVC.videoPlayerView?.player
-        let isPlaying = (player?.rate ?? 0) != 0
+        let isPlaying = watchVC.videoPlayerView?.engine?.isPlaying == true
         miniBar?.update(
             title: watchVC.initialVideo.title,
             channel: watchVC.initialVideo.channelName,
             isPlaying: isPlaying,
             thumbnailURL: watchVC.initialVideo.thumbnailURL
         )
-        miniBar?.attachPlayer(player)
+        miniBar?.attachPlayer(watchVC.videoPlayerView?.player)
         miniBar?.applyTheme()
     }
 }
@@ -192,13 +191,13 @@ private extension PlayerPanelViewController {
     }
 
     func togglePlayback() {
-        guard let player = watchVC.videoPlayerView?.player else {
+        guard let engine = watchVC.videoPlayerView?.engine else {
             return
         }
-        if player.rate == 0 {
-            player.play()
+        if engine.isPlaying {
+            engine.pause()
         } else {
-            player.pause()
+            engine.play()
         }
         refreshMiniBar()
     }

@@ -101,12 +101,13 @@ extension WatchViewController {
             return
         }
         AppLog.player("remote previous: restart")
-        videoPlayerView?.player?.seek(
+        videoPlayerView?.engine?.seek(
             to: .zero,
             toleranceBefore: .zero,
-            toleranceAfter: .zero
+            toleranceAfter: .zero,
+            completion: nil
         )
-        videoPlayerView?.player?.play()
+        videoPlayerView?.engine?.play()
     }
 
     func dismissAutoplayOverlay() {

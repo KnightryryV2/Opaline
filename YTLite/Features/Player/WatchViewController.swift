@@ -232,7 +232,7 @@ final class WatchViewController: UIViewController {
             || navigationController?.isBeingDismissed == true
         if isDismissing {
             pageLoadToken.cancel()
-            videoPlayerView?.player?.pause()
+            videoPlayerView?.engine?.pause()
         }
     }
 

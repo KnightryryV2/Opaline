@@ -6,12 +6,12 @@ import UIKit
 extension WatchViewController {
     func recoverPlayback() {
         guard !isRecoveringPlayback,
-              let player = videoPlayerView?.player
+              let engine = videoPlayerView?.engine
         else {
             return
         }
-        let position = player.currentTime().seconds
-        let wasPlaying = player.rate > 0
+        let position = engine.currentTime.seconds
+        let wasPlaying = engine.isPlaying
         isRecoveringPlayback = true
         hasSeenPlaybackError = false
         recoveryTargetSeconds = position
@@ -49,12 +49,12 @@ extension WatchViewController {
             seconds: target,
             preferredTimescale: 1_000
         )
-        videoPlayerView?.player?.seek(
+        videoPlayerView?.engine?.seek(
             to: time,
             toleranceBefore: .zero,
             toleranceAfter: .zero
         ) { [weak self] _ in
-            self?.videoPlayerView?.player?.play()
+            self?.videoPlayerView?.engine?.play()
         }
         return true
     }
