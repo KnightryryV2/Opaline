@@ -16,6 +16,13 @@ extension VideoPlayerView {
         engine = newEngine
         if let videoLayer = newEngine.videoLayer {
             attachSampleBufferLayer(videoLayer)
+            // A quality switch builds a whole new engine, and with it a new
+            // AVSampleBufferDisplayLayer carrying an identity transform —
+            // while `videoZoom` still holds the user's zoom. Re-apply it, or
+            // the picture snaps back to 100% behind the view's own state.
+            // (The AVPlayer path keeps one long-lived `playerLayer`, so its
+            // transform survives on its own; re-applying is a harmless no-op.)
+            setZoom(videoZoom, animated: false)
             applyAutoZoomIfNeeded()
         } else {
             playerLayer.isHidden = false
