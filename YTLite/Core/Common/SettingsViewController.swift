@@ -18,6 +18,7 @@ final class SettingsViewController: UIViewController {
         case playbackSource
         case solverEndpoint
         case forceSampleBuffer
+        case softwareAV1Decoder, forceAV1LowRes
         case shareLog
     }
     private struct Section {
@@ -58,6 +59,16 @@ final class SettingsViewController: UIViewController {
         if showsAutoHours {
             themeRows.append(contentsOf: [.autoDarkStart, .autoDarkEnd])
         }
+        let playbackRows: [Row] = [
+            .quality, .backgroundPlayback, .pipEnabled,
+            .hideStatusBar, .autoZoomToFill, .showShorts,
+            .autoplayEnabled, .autoplayMixEnabled
+        ]
+        let playbackFooter = "settings.footer.playback".localized
+        var debugRows: [Row] = [.playbackSource, .solverEndpoint, .forceSampleBuffer]
+        var debugFooter = "settings.footer.debug".localized
+        appendAV1DebugRows(to: &debugRows, footer: &debugFooter)
+        debugRows.append(.shareLog)
         return [
             Section(
                 header: "settings.section.theme".localized,
@@ -71,12 +82,8 @@ final class SettingsViewController: UIViewController {
             ),
             Section(
                 header: "settings.section.playback".localized,
-                footer: "settings.footer.playback".localized,
-                rows: [
-                    .quality, .backgroundPlayback, .pipEnabled,
-                    .hideStatusBar, .autoZoomToFill, .showShorts,
-                    .autoplayEnabled, .autoplayMixEnabled
-                ]
+                footer: playbackFooter,
+                rows: playbackRows
             ),
             Section(
                 header: "settings.section.autoDub".localized,
@@ -105,11 +112,8 @@ final class SettingsViewController: UIViewController {
             ),
             Section(
                 header: "settings.section.debug".localized,
-                footer: "settings.footer.debug".localized,
-                rows: [
-                    .playbackSource, .solverEndpoint,
-                    .forceSampleBuffer, .shareLog
-                ]
+                footer: debugFooter,
+                rows: debugRows
             ),
             Section(header: nil, footer: appVersionFooter, rows: [])
         ]
@@ -398,6 +402,24 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
                 UserDefaults.standard.set(
                     $0, forKey: UserDefaultsKeys.Debug.forceSampleBufferEngine
                 )
+            }
+        case .softwareAV1Decoder:
+            return makeToggleCell(
+                "settings.row.softwareAV1Decoder".localized,
+                isOn: AV1Support.isForceSoftwareDecoder
+            ) {
+                AV1Support.isForceSoftwareDecoder = $0
+                // Toggling A changes both the quality menu (isSupported)
+                // and whether the dependent B row is shown in Debug.
+                self.reloadAllSettings()
+            }
+        case .forceAV1LowRes:
+            return makeToggleCell(
+                "settings.row.forceAV1LowRes".localized,
+                isOn: AV1Support.isForceAV1LowRes
+            ) {
+                AV1Support.isForceAV1LowRes = $0
+                self.reloadSection(containing: .quality)
             }
         }
     }
@@ -777,6 +799,26 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         present(sheet, animated: true)
     }
 
+    /// Builds the AV1 debug rows/footer text: a hardware hint, Toggle A
+    /// (shown whenever dav1d is linked in), and Toggle B (shown only while
+    /// A is on — the autoDubLanguage/sponsorBlockSettings dependent-row
+    /// pattern, hide entirely rather than show disabled).
+    private func appendAV1DebugRows(to rows: inout [Row], footer: inout String) {
+        guard AV1Support.isSoftwareAvailable else {
+            return
+        }
+        footer += "\n\n" + (AV1Support.isHardwareSupported
+            ? "settings.footer.av1HardwareAvailable".localized
+            : "settings.footer.av1HardwareNotAvailable".localized)
+        rows.append(.softwareAV1Decoder)
+        footer += "\n\n" + "settings.footer.softwareAV1Decoder".localized
+        guard AV1Support.isForceSoftwareDecoder else {
+            return
+        }
+        rows.append(.forceAV1LowRes)
+        footer += "\n\n" + "settings.footer.forceAV1LowRes".localized
+    }
+
     private func reloadCacheSection() {
         let cacheIndex = sections.firstIndex {
             $0.rows.contains(.persistCache)
@@ -881,7 +923,7 @@ enum VideoQualityStore {
     /// 1440p/2160p exist only as av01 — offered solely where decodable.
     static var options: [String] {
         var opts = ["Auto", "1080p", "720p", "480p", "360p"]
-        if AV1Support.isHardwareSupported {
+        if AV1Support.isSupported {
             opts.insert(contentsOf: ["2160p", "1440p"], at: 1)
         }
         return opts

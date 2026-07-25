@@ -11,6 +11,10 @@ extension MWebSource {
         var audioURL: URL
     }
 
+    /// Builds generated-HLS and hands it straight to AVPlayer — unlike
+    /// `AndroidVRSource`, mweb has no sample-buffer/dav1d fallback, so av01
+    /// must never reach here on a device without hardware AV1 decode (see
+    /// `DirectPlaybackClient.allowsSoftwareAV1`).
     func buildGeneratedHLS(
         info: DirectPlaybackInfo,
         streams: SolvedStreams,

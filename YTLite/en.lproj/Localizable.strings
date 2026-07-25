@@ -184,6 +184,10 @@
 "settings.footer.home" = "How recommendation shelves are shown: one continuous grid or TV-style horizontal rails.";
 "settings.footer.ryd" = "Dislike counts are powered by Return YouTube Dislike (returnyoutubedislike.com) — an open community project.";
 "settings.footer.debug" = "Force a specific playback source. Normally Android VR is used with automatic fallback. The solver server powers the Mobile Web + pot source (pot minting, and n-solving on iOS 12–13).";
+"settings.footer.av1HardwareAvailable" = "Hardware AV1 decode: available on this device.";
+"settings.footer.av1HardwareNotAvailable" = "Hardware AV1 decode: not available on this device.";
+"settings.footer.softwareAV1Decoder" = "Forces av01 through the software (dav1d) decoder instead of hardware, or unlocks 1440p/2160p av01 on devices without a hardware AV1 decoder. Uses extra CPU — expect faster battery drain and a warmer device.";
+"settings.footer.forceAV1LowRes" = "Also admits av01 at 360p–1080p, not just above 1080p — for testing the software decoder at resolutions weak hardware can actually sustain. Has no effect unless Force Software Decoder above is on.";
 
 /* Theme rows; segment labels for dark/light/auto modes */
 "settings.row.theme" = "Theme";
@@ -236,6 +240,8 @@
 "settings.row.playbackSource" = "Playback Source";
 "settings.row.solverServer" = "Solver Server";
 "settings.row.forceSampleBuffer" = "Force Sample-Buffer Engine (avc1)";
+"settings.row.softwareAV1Decoder" = "Force Software Decoder";
+"settings.row.forceAV1LowRes" = "Force AV1 for 360–1080p";
 "settings.row.shareLog" = "Share Debug Log";
 /* Solver-server URL alert */
 "settings.solver.message" = "URL of the solver server.";

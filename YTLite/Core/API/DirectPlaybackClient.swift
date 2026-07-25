@@ -70,6 +70,17 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
         true
     }
 
+    /// Whether this client's playback build path has a software (dav1d)
+    /// decode route to fall back on for av01. Only android_vr does — see
+    /// `AndroidVRSource+SampleBuffer.shouldUseSampleBuffer`. mweb's build
+    /// path (`MWebSource+Build.buildGeneratedHLS`) always hands off to
+    /// AVPlayer, which can only decode av01 in hardware, so av01 must not be
+    /// admitted for it via the software path. Gates
+    /// `AV1Support.isAV01Admitted(atHeight:allowsSoftwareAV1:)`.
+    var allowsSoftwareAV1: Bool {
+        self == .androidVR
+    }
+
     /// MWEB playback is anonymous and its GVS pot binds to the video id; sending
     /// the app's authenticated (TV device) session cookies makes YouTube return a
     /// session-bound URL the anonymous pot can't satisfy (403). Keep it cookieless.

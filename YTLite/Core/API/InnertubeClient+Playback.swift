@@ -228,7 +228,8 @@ private extension InnertubeClient {
         let json = client == .mweb
             ? unwrappingSignatureCiphers(json)
             : json
-        guard let info = parseDirectPlaybackInfo(json) else {
+        let allowsSW = client.allowsSoftwareAV1
+        guard let info = parseDirectPlaybackInfo(json, allowsSoftwareAV1: allowsSW) else {
             logDirectPlaybackError(
                 json: json,
                 videoId: videoId,

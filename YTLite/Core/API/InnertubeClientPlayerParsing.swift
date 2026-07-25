@@ -2,15 +2,15 @@
 import Foundation
 
 extension InnertubeClient {
-    static func parsePlayerJSON(
-        _ json: [String: Any]
-    ) -> DirectPlaybackInfo? {
-        logStreamingDataSummary(json)
-        return parseDirectPlaybackInfo(json)
-    }
-
+    /// - Parameter allowsSoftwareAV1: Whether this response's client has a
+    ///   software-AV1 route (only android_vr does — see
+    ///   `DirectPlaybackClient.allowsSoftwareAV1`). Deliberately has no
+    ///   default: admitting av01 for a client that can only hand it to
+    ///   AVPlayer is exactly the black-screen bug this parameter exists to
+    ///   prevent, so every caller must state which side it is on.
     static func parseDirectPlaybackInfo(
-        _ json: [String: Any]
+        _ json: [String: Any],
+        allowsSoftwareAV1: Bool
     ) -> DirectPlaybackInfo? {
         guard let sd = json["streamingData"]
             as? [String: Any]
@@ -21,15 +21,18 @@ extension InnertubeClient {
             as? [[String: Any]] ?? []
         let adaptive = sd["adaptiveFormats"]
             as? [[String: Any]] ?? []
+        logAV01Formats(adaptive)
         let selected = selectFormats(
             formats: formats,
-            adaptive: adaptive
+            adaptive: adaptive,
+            allowsSoftwareAV1: allowsSoftwareAV1
         )
         return assemblePlayback(
             json: json,
             streamingData: sd,
             selected: selected,
-            adaptive: adaptive
+            adaptive: adaptive,
+            allowsSoftwareAV1: allowsSoftwareAV1
         )
     }
 
@@ -69,6 +72,14 @@ extension InnertubeClient {
         _ format: [String: Any]
     ) -> Int? { format["itag"] as? Int }
 
+    /// At equal height, av01 normally loses to avc1's higher bitrate — which
+    /// is exactly backwards while Debug Toggle B ("Force AV1 for 360-1080p")
+    /// is on, since the whole point of that toggle is to exercise dav1d at
+    /// resolutions hardware already reaches. `AV1Support.isForceAV1LowRes`
+    /// is `false` whenever the toggle is off, so this tiebreak is inert
+    /// (byte-for-byte the old bitrate-only comparison) for every other case,
+    /// including `filterVideoCandidates`'s reuse of this function where the
+    /// candidate pool is avc1-only.
     static func heightBitrateLess(
         _ lhs: [String: Any],
         _ rhs: [String: Any]
@@ -76,6 +87,13 @@ extension InnertubeClient {
         let leftHeight = fmtHeight(lhs)
         let rightHeight = fmtHeight(rhs)
         if leftHeight == rightHeight {
+            if AV1Support.isForceAV1LowRes {
+                let leftIsAV1 = fmtMimeType(lhs).contains("av01")
+                let rightIsAV1 = fmtMimeType(rhs).contains("av01")
+                if leftIsAV1 != rightIsAV1 {
+                    return rightIsAV1
+                }
+            }
             return fmtBitrate(lhs)
                 < fmtBitrate(rhs)
         }
@@ -88,7 +106,8 @@ extension InnertubeClient {
 private extension InnertubeClient {
     static func selectFormats(
         formats: [[String: Any]],
-        adaptive: [[String: Any]]
+        adaptive: [[String: Any]],
+        allowsSoftwareAV1: Bool
     ) -> SelectedFmts {
         let progressive = formats
             .filter {
@@ -101,7 +120,8 @@ private extension InnertubeClient {
             }
         let video = selectBestVideo(
             from: adaptive,
-            maxHeight: VideoQualityStore.maxHeight
+            maxHeight: VideoQualityStore.maxHeight,
+            allowsSoftwareAV1: allowsSoftwareAV1
         )
         return SelectedFmts(
             progressive: progressive,
@@ -141,28 +161,40 @@ private extension InnertubeClient {
         }
     }
 
-    /// avc1 everywhere; av01 additionally on hardware-AV1 devices (the only
-    /// codecs above 1080p are VP9/AV1, and VP9 is undecodable by AVPlayer).
+    /// avc1 everywhere; av01 additionally wherever `AV1Support` admits it —
+    /// unconditionally on hardware-AV1 devices, only above 1080p on the
+    /// software-only (dav1d) path, unless Debug Toggle B lifts that floor.
+    /// With both Debug toggles off this is byte-for-byte the pre-AV1-work
+    /// ladder: avc1-only, capped at 1080p, on anything without hardware AV1.
+    /// `allowsSoftwareAV1` further restricts the software branch to clients
+    /// whose build path actually has a software-decode route (android_vr) —
+    /// see `AV1Support.isAV01Admitted(atHeight:allowsSoftwareAV1:)`.
     static func fmtIsPlayableVideo(
-        _ fmt: [String: Any]
+        _ fmt: [String: Any],
+        allowsSoftwareAV1: Bool
     ) -> Bool {
         let mime = fmtMimeType(fmt)
         guard mime.contains("video/mp4") else {
             return false
         }
-        return mime.contains("avc1")
-            || (AV1Support.isHardwareSupported
-                && mime.contains("av01"))
+        guard mime.contains("av01") else {
+            return mime.contains("avc1")
+        }
+        return AV1Support.isAV01Admitted(
+            atHeight: fmtHeight(fmt),
+            allowsSoftwareAV1: allowsSoftwareAV1
+        )
     }
 
     static func selectBestVideo(
         from adaptive: [[String: Any]],
-        maxHeight: Int?
+        maxHeight: Int?,
+        allowsSoftwareAV1: Bool
     ) -> [String: Any]? {
         adaptive
             .filter { fmt in
                 fmtDirectURL(fmt) != nil
-                    && fmtIsPlayableVideo(fmt)
+                    && fmtIsPlayableVideo(fmt, allowsSoftwareAV1: allowsSoftwareAV1)
                     && fmtHeight(fmt) > 0
                     && maxHeight.map {
                         fmtHeight(fmt) <= $0
@@ -328,12 +360,13 @@ private extension InnertubeClient {
     }
 
     static func buildAllDashVideo(
-        from adaptive: [[String: Any]]
+        from adaptive: [[String: Any]],
+        allowsSoftwareAV1: Bool
     ) -> [DashFormatInfo] {
         adaptive
             .filter {
                 fmtDirectURL($0) != nil
-                    && fmtIsPlayableVideo($0)
+                    && fmtIsPlayableVideo($0, allowsSoftwareAV1: allowsSoftwareAV1)
                     && fmtHeight($0) > 0
             }
             .compactMap(buildDashInfo)
@@ -341,21 +374,59 @@ private extension InnertubeClient {
                 let lh = lhs.height ?? 0
                 let rh = rhs.height ?? 0
                 if lh == rh {
+                    // Same tiebreak as `heightBitrateLess`: while Toggle B is
+                    // on, put av01 first so `AndroidVRSource.qualities(from:)`
+                    // — which dedupes by label and keeps the first entry per
+                    // height — keeps av01 rather than the higher-bitrate
+                    // avc1 twin. Inert (bitrate-only) when the toggle is off.
+                    if AV1Support.isForceAV1LowRes {
+                        let lhsIsAV1 = lhs.codecs.contains("av01")
+                        let rhsIsAV1 = rhs.codecs.contains("av01")
+                        if lhsIsAV1 != rhsIsAV1 {
+                            return lhsIsAV1
+                        }
+                    }
                     return lhs.bitrate > rhs.bitrate
                 }
                 return lh > rh
             }
+    }
+
+    /// One-time diagnostic: android_vr's Phase 0 spike only ever confirmed
+    /// av01 at 1440p/2160p plus a 1080p rung (itag 699) — it's unknown
+    /// whether this client offers av01 at 720p/480p/360p at all, which caps
+    /// what Toggle B can ever reach. Only logs while the software path is
+    /// actually in use (Toggle A), so normal users never pay for it.
+    static func logAV01Formats(_ adaptive: [[String: Any]]) {
+        guard AV1Support.isForceSoftwareDecoder else {
+            return
+        }
+        let av01 = adaptive.filter { fmtMimeType($0).contains("av01") }
+        guard !av01.isEmpty else {
+            AppLog.innertube("AV1 probe: response has no av01 formats")
+            return
+        }
+        let lines = av01.map { fmt -> String in
+            let itag = fmtItag(fmt) ?? -1
+            let height = fmtHeight(fmt)
+            let fps = fmt["fps"] as? Int ?? 0
+            let codecs = extractCodecs(from: fmtMimeType(fmt))
+            return "itag=\(itag) height=\(height) fps=\(fps) codec=\(codecs)"
+        }
+        AppLog.innertube("AV1 probe: av01 formats = [\(lines.joined(separator: "; "))]")
     }
 }
 
 // MARK: - Playback Assembly
 
 private extension InnertubeClient {
+    // swiftlint:disable:next function_parameter_count
     static func assemblePlayback(
         json: [String: Any],
         streamingData sd: [String: Any],
         selected: SelectedFmts,
-        adaptive: [[String: Any]]
+        adaptive: [[String: Any]],
+        allowsSoftwareAV1: Bool
     ) -> DirectPlaybackInfo? {
         let dashVideo = selected.video.flatMap(buildDashInfo)
         let dashAudio = selected.audio.flatMap(buildDashInfo)
@@ -369,7 +440,8 @@ private extension InnertubeClient {
         }
         let config = extractPlayerConfig(json: json)
         let allDash = buildAllDashVideo(
-            from: adaptive
+            from: adaptive,
+            allowsSoftwareAV1: allowsSoftwareAV1
         )
         let allAudio = buildAllDashAudio(
             from: adaptive
@@ -506,31 +578,6 @@ private extension InnertubeClient {
             ?? (sel.audio?[key] as? String)
         return ms.flatMap(Double.init)
             .map { $0 / 1_000.0 }
-    }
-
-    static func logStreamingDataSummary(
-        _ json: [String: Any]
-    ) {
-        if let sd = json["streamingData"]
-            as? [String: Any] {
-            let fc = (sd["formats"]
-                as? [[String: Any]])?.count ?? 0
-            let ac = (sd["adaptiveFormats"]
-                as? [[String: Any]])?.count ?? 0
-            AppLog.innertube(
-                "streamingData found:"
-                    + " formats=\(fc)"
-                    + " adaptive=\(ac)"
-            )
-        } else {
-            let ps = (json["playabilityStatus"]
-                as? [String: Any])?["status"]
-                ?? "nil"
-            AppLog.innertube(
-                "streamingData MISSING"
-                    + " playabilityStatus: \(ps)"
-            )
-        }
     }
 
     static func logDashSelection(

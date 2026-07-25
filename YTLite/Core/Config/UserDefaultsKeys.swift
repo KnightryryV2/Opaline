@@ -86,6 +86,14 @@ enum UserDefaultsKeys {
         /// Routes avc1 ≤1080p through the software sample-buffer engine
         /// instead of the generated-HLS/AVPlayer path (Phase 2 dev toggle).
         static let forceSampleBufferEngine = "debug_forceSampleBufferEngine"
+        /// Toggle A — master switch for the dav1d path: overrides the
+        /// hardware route where hardware AV1 exists, unlocks the >1080p
+        /// ladder where it doesn't — see `AV1Support.isForceSoftwareDecoder`.
+        static let softwareAV1Decoder = "debug_softwareAV1Decoder"
+        /// Toggle B — lifts the >1080p height floor so av01 is admitted at
+        /// every height; no effect unless `softwareAV1Decoder` is also on —
+        /// see `AV1Support.isForceAV1LowRes`.
+        static let forceAV1LowRes = "debug_forceAV1LowRes"
     }
 
     enum Migration {
