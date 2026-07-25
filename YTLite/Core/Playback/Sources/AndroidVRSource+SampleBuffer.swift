@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 // MARK: - AndroidVRSource + SampleBuffer engine (debug)
@@ -34,6 +35,13 @@ extension AndroidVRSource {
             return false
         }
         return video.codecs.hasPrefix("avc1") && (video.height ?? 0) <= 1_080
+    }
+
+    private static func naturalSize(from format: DashFormatInfo) -> CGSize? {
+        guard let width = format.width, let height = format.height else {
+            return nil
+        }
+        return CGSize(width: width, height: height)
     }
 
     private static func makeIndex(
@@ -81,7 +89,8 @@ extension AndroidVRSource {
         let engine = SampleBufferEngine(
             video: videoTrack,
             audio: audioTrack,
-            durationSeconds: info.duration ?? videoIndex.totalDuration
+            durationSeconds: info.duration ?? videoIndex.totalDuration,
+            naturalSize: naturalSize(from: video.format)
         )
         completion(.success(PreparedPlayback(
             engine: engine,

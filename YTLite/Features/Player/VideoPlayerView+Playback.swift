@@ -16,9 +16,11 @@ extension VideoPlayerView {
         engine = newEngine
         if let videoLayer = newEngine.videoLayer {
             attachSampleBufferLayer(videoLayer)
+            applyAutoZoomIfNeeded()
         } else {
             playerLayer.isHidden = false
             playerLayer.player = (newEngine as? AVPlayerEngine)?.player
+            observeReadyForDisplay()
         }
         bindEngineCallbacks(newEngine)
         addPeriodicObserver()

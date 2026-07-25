@@ -14,12 +14,31 @@ extension VideoPlayerView {
         )
     }
 
+    /// Layer currently presenting video: `sampleBufferLayer` when a
+    /// software-decode engine is attached (renders into an
+    /// `AVSampleBufferDisplayLayer` hosted as a plain `CALayer`), else
+    /// `playerLayer`. Pinch-zoom targets this instead of hardcoding
+    /// `playerLayer` so both playback paths share one zoom implementation.
+    var activeVideoLayer: CALayer { sampleBufferLayer ?? playerLayer }
+
     /// Scale at which the video covers the whole view (no bars).
     /// 1 when the video already fills or its size is not yet known.
     var fillZoom: CGFloat {
-        let rect = playerLayer.videoRect
-        guard rect.width > 0, rect.height > 0,
-              bounds.width > 0, bounds.height > 0 else {
+        guard bounds.width > 0, bounds.height > 0 else {
+            return 1
+        }
+        let rect: CGRect
+        if sampleBufferLayer != nil {
+            // AVSampleBufferDisplayLayer has no `videoRect` — derive the
+            // same aspect-fit rect from the manifest-reported pixel size.
+            guard let size = engine?.naturalSize, size.width > 0, size.height > 0 else {
+                return 1
+            }
+            rect = AVMakeRect(aspectRatio: size, insideRect: bounds)
+        } else {
+            rect = playerLayer.videoRect
+        }
+        guard rect.width > 0, rect.height > 0 else {
             return 1
         }
         return max(
@@ -45,6 +64,11 @@ extension VideoPlayerView {
         zoomIsAuto = target > 1
     }
 
+    /// AVPlayer path only: `AVSampleBufferDisplayLayer` also has
+    /// `isReadyForDisplay`, but as a KVO-observable public property it's
+    /// iOS 17.4+ only. The sample-buffer path doesn't need it anyway — its
+    /// `fillZoom` comes from the manifest's `naturalSize`, known synchronously
+    /// at attach, so `attach(engine:)` calls `applyAutoZoomIfNeeded()` directly.
     func observeReadyForDisplay() {
         readyObservation = playerLayer.observe(
             \.isReadyForDisplay,
@@ -122,13 +146,13 @@ extension VideoPlayerView {
             CATransaction.setAnimationTimingFunction(
                 CAMediaTimingFunction(name: .easeInEaseOut)
             )
-            playerLayer.setAffineTransform(scale)
+            activeVideoLayer.setAffineTransform(scale)
             CATransaction.commit()
             return
         }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        playerLayer.setAffineTransform(scale)
+        activeVideoLayer.setAffineTransform(scale)
         CATransaction.commit()
     }
 

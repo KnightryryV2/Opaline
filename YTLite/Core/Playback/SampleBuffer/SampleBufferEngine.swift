@@ -16,10 +16,10 @@ struct SampleBufferTrack {
 // MARK: - DecodeStatsSnapshot
 
 /// Rolling dav1d decode-performance snapshot for the stats-for-nerds overlay
-/// (`WatchViewController+Stats.swift`). Built and refreshed roughly once a
-/// second from `TrackProducer`'s cumulative counters — see
-/// `updateDecodeStats()` in `SampleBufferEngine+Feed.swift`. `nil` on the
-/// engine until the av01 video producer has completed one full window.
+/// (`WatchViewController+Stats.swift`). Built and refreshed roughly once a second from
+/// `TrackProducer`'s cumulative counters — see `updateDecodeStats()` in
+/// `SampleBufferEngine+Feed.swift`. `nil` on the engine until the av01 video producer
+/// has completed one full window.
 struct DecodeStatsSnapshot {
     /// Frames dav1d produced per second of real elapsed time in this window
     /// — i.e. actual sustained throughput, including any time the FIFO
@@ -38,13 +38,12 @@ struct DecodeStatsSnapshot {
 
 // MARK: - SampleBufferEngine
 
-/// `PlayerEngine` backed by `AVSampleBufferDisplayLayer` +
-/// `AVSampleBufferAudioRenderer`, kept in lockstep by an
-/// `AVSampleBufferRenderSynchronizer` — the software-decoded AV1 path. The
-/// transport-clock skeleton: fetching/parsing/enqueuing lives in
-/// `+Feed.swift` (+ `TrackProducer.swift`), seeking in `+Seek.swift`,
-/// starvation/clock-parking in `+Starvation.swift` — several stored
-/// properties below are internal rather than private for those extensions.
+/// `PlayerEngine` backed by `AVSampleBufferDisplayLayer` + `AVSampleBufferAudioRenderer`,
+/// kept in lockstep by an `AVSampleBufferRenderSynchronizer` — the software-decoded AV1
+/// path. The transport-clock skeleton: fetching/parsing/enqueuing lives in `+Feed.swift`
+/// (+ `TrackProducer.swift`), seeking in `+Seek.swift`, starvation/clock-parking in
+/// `+Starvation.swift` — several stored properties below are internal rather than
+/// private for those extensions.
 final class SampleBufferEngine: PlayerEngine {
     // MARK: - Instance properties
 
@@ -92,9 +91,8 @@ final class SampleBufferEngine: PlayerEngine {
     var audioStarving = true
 
     /// feedQueue-only mirrors of `videoStarving`/`audioStarving`, used by
-    /// `updateClockForStarvation()` so the clock decision never races the
-    /// main-queue pair's async hop — set synchronously from `drainVideo()`/
-    /// `drainAudio()`.
+    /// `updateClockForStarvation()` so the clock decision never races the main-queue
+    /// pair's async hop — set synchronously from `drainVideo()`/`drainAudio()`.
     var videoStarvingFeed = true
     /// See `videoStarvingFeed`.
     var audioStarvingFeed = true
@@ -162,7 +160,8 @@ final class SampleBufferEngine: PlayerEngine {
     }
 
     var videoLayer: CALayer? { displayLayer }
-
+    /// Manifest-reported pixel size, for the pinch-zoom fill-scale math.
+    let naturalSize: CGSize?
     /// Set once the first video frame has been enqueued into `displayLayer`
     /// (see `+Feed.swift`) — the preroll signal: the display layer accepts
     /// frames even at rate 0, so gating on it can't deadlock. Reset on seek.
@@ -181,11 +180,13 @@ final class SampleBufferEngine: PlayerEngine {
         video: SampleBufferTrack,
         audio: SampleBufferTrack,
         durationSeconds: Double,
+        naturalSize: CGSize? = nil,
         fetcher: SegmentFetcher = SegmentFetcher()
     ) {
         self.videoTrack = video
         self.audioTrack = audio
         self.durationSeconds = durationSeconds
+        self.naturalSize = naturalSize
         self.fetcher = fetcher
         synchronizer.addRenderer(displayLayer)
         synchronizer.addRenderer(audioRenderer)
@@ -205,13 +206,12 @@ final class SampleBufferEngine: PlayerEngine {
         self.rate = rate
     }
 
-    // teardown() lives in SampleBufferEngine+Teardown.swift: stops the
-    // renderers/producers so a discarded engine's decode loop doesn't keep
-    // running in the background.
+    // teardown() lives in SampleBufferEngine+Teardown.swift: stops the renderers/producers
+    // so a discarded engine's decode loop doesn't keep running in the background.
 
     // seek(to:toleranceBefore:toleranceAfter:completion:) lives in
-    // SampleBufferEngine+Seek.swift: flushes both renderers and re-enqueues
-    // from the containing segment's keyframe.
+    // SampleBufferEngine+Seek.swift: flushes both renderers and re-enqueues from the
+    // containing segment's keyframe.
 
     func addPeriodicTimeObserver(
         interval: CMTime,

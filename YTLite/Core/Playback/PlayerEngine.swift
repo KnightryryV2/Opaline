@@ -34,6 +34,11 @@ protocol PlayerEngine: AnyObject {
     /// Render surface for engines that own their own layer (sample-buffer
     /// path). nil for AVPlayer-backed engines — the view uses AVPlayerLayer.
     var videoLayer: CALayer? { get }
+    /// Decoded video pixel dimensions, once known. `nil` for `AVPlayerEngine`,
+    /// which derives this from `AVPlayerLayer.videoRect` instead; sample-buffer
+    /// engines report it so the view can compute the pinch-zoom fill scale for
+    /// `AVSampleBufferDisplayLayer`, which has no `videoRect` equivalent.
+    var naturalSize: CGSize? { get }
 
     /// Fires (on the main queue) when the play/pause state changes — drives the
     /// play/pause icon.
@@ -80,6 +85,8 @@ extension PlayerEngine {
     var isPlaying: Bool { rate > 0 }
     /// nil by default — only sample-buffer-backed engines own a layer.
     var videoLayer: CALayer? { nil }
+    /// nil by default — only sample-buffer-backed engines report this.
+    var naturalSize: CGSize? { nil }
     func teardown() {}
 
     func seek(to time: CMTime) {
