@@ -9,6 +9,7 @@ final class HLSPlaylistLoader: NSObject,
     )
 
     private var playlists: [String: Data] = [:]
+    private var loggedPaths: Set<String> = []
 
     /// Register playlist content for a given path.
     func register(path: String, content: String) {
@@ -43,6 +44,7 @@ final class HLSPlaylistLoader: NSObject,
             return false
         }
         AppLog.hls("serving \(key) (\(data.count) bytes)")
+        logPlaylistBodyOnce(key: key, data: data)
         fillLoadingRequest(request, with: data)
         request.finishLoading()
         return true
@@ -61,6 +63,25 @@ final class HLSPlaylistLoader: NSObject,
             return trimmed
         }
         return nil
+    }
+
+    /// Logs the served playlist body once per path per loader instance —
+    /// full text for the multivariant playlist (~300 bytes), first 10 lines
+    /// for media playlists (which can be large with many segments).
+    private func logPlaylistBodyOnce(key: String, data: Data) {
+        guard loggedPaths.insert(key).inserted,
+              let text = String(data: data, encoding: .utf8)
+        else {
+            return
+        }
+        if key == "master.m3u8" || key == "audio-master.m3u8" {
+            AppLog.hls("\(key) body:\n\(text)")
+        } else {
+            let head = text.split(separator: "\n", omittingEmptySubsequences: false)
+                .prefix(10)
+                .joined(separator: "\n")
+            AppLog.hls("\(key) head:\n\(head)")
+        }
     }
 
     private func logUnknownPath(_ url: URL) {

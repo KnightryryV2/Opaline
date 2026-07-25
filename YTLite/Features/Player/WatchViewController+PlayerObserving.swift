@@ -152,6 +152,7 @@ extension WatchViewController {
                 + " code=\(code)"
         )
         logUnderlyingError(nsError)
+        logErrorLogEvents(item)
         if code == -12_660
             || domain == "CoreMediaErrorDomain" {
             hasSeenPlaybackError = true
@@ -242,26 +243,13 @@ extension WatchViewController {
     func playerItemNewErrorLogEntry(
         _ note: Notification
     ) {
-        guard let item =
-            note.object as? AVPlayerItem,
-            let events = item.errorLog()?.events,
-            let last = events.last
-        else {
-            AppLog.player(
-                "player item new error log entry"
-            )
+        guard let item = note.object as? AVPlayerItem else {
             return
         }
-        let domain = last.errorDomain
-        let comment = last.errorComment ?? "nil"
-        let uri = last.uri ?? "nil"
-        AppLog.player(
-            "player error log:"
-                + " domain=\(domain),"
-                + " code=\(last.errorStatusCode),"
-                + " comment=\(comment),"
-                + " uri=\(uri)"
-        )
+        logErrorLogEvents(item)
+        guard let last = item.errorLog()?.events.last else {
+            return
+        }
         if last.errorStatusCode == 403 {
             hasSeenPlaybackError = true
             if !isRecoveringPlayback {
