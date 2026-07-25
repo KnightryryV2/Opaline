@@ -2,7 +2,7 @@
 
 # YTLite
 
-**A lightweight, native YouTube client for iOS 12+. No ads, no tracking, no dependencies.**
+**A lightweight, native YouTube client for iOS 12+. No ads, no tracking.**
 
 [![Latest release](https://img.shields.io/github/v/release/verback2308/YTLite?label=release&color=blue)](https://github.com/verback2308/YTLite/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/verback2308/YTLite/total?color=brightgreen)](https://github.com/verback2308/YTLite/releases)
@@ -224,7 +224,7 @@ YTLite/
 
 ### Key Design Decisions
 
-- **Zero external dependencies** — Networking via a custom `HTTPTransport` abstraction over `URLSession`, images via custom `ThumbnailImageView`, playback via `AVPlayer`
+- **No package manager dependencies** — Networking via a custom `HTTPTransport` abstraction over `URLSession`, images via custom `ThumbnailImageView`, playback via `AVPlayer`; vendored [dav1d](https://code.videolan.org/videolan/dav1d) (BSD-2-Clause) for AV1 decode
 - **All UIKit, no SwiftUI** — Programmatic layout, no storyboards
 - **iOS 12+ support** — No SF Symbols, no SwiftUI, no Combine
 - **Manual JSON parsing** — `JSONSerialization` + dictionary traversal for YouTube Innertube API responses
@@ -277,6 +277,7 @@ If YTLite keeps your old device alive, you can support development:
 
 ## Credits
 
+- [dav1d](https://code.videolan.org/videolan/dav1d) — AV1 video decoder (vendored, BSD-2-Clause; see [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md))
 - [SponsorBlock](https://github.com/ajayyy/SponsorBlock) — crowdsourced API for skipping sponsored segments
 - [Return YouTube Dislike](https://github.com/Anarios/return-youtube-dislike) — community-maintained dislike count data
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) — invaluable reference for understanding YouTube's playback infrastructure

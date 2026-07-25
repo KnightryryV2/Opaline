@@ -72,8 +72,37 @@ extension WatchViewController {
         if item == nil, let engine = videoPlayerView?.engine {
             rows.append(row("Engine", "sample-buffer"))
             rows.append(row("Buffer (engine)", engineBufferValue(engine)))
+            if let sbEngine = engine as? SampleBufferEngine {
+                rows.append(row("Decode fps", decodeFpsValue(sbEngine)))
+                rows.append(row("Decode cost", decodeCostValue(sbEngine)))
+            }
         }
         return rows.joined(separator: "\n")
+    }
+
+    /// `SampleBufferEngine` is the only `PlayerEngine` with decode stats, so
+    /// this file casts down to it rather than growing the protocol for one
+    /// implementation. `decodeStats` is `nil` until the av01/dav1d path has
+    /// completed a sampling window (or forever, on an avc1 sample-buffer
+    /// track) — see `DecodeStatsSnapshot`.
+    private func decodeFpsValue(_ engine: SampleBufferEngine) -> String {
+        guard let stats = engine.decodeStats else {
+            return "?"
+        }
+        return String(
+            format: "%.1f fps, %d skipped, %dx%d",
+            stats.decodeFps,
+            stats.framesSkipped,
+            stats.width,
+            stats.height
+        )
+    }
+
+    private func decodeCostValue(_ engine: SampleBufferEngine) -> String {
+        guard let stats = engine.decodeStats else {
+            return "?"
+        }
+        return String(format: "%.1f ms/frame", stats.msPerFrame)
     }
 
     private func engineBufferValue(_ engine: PlayerEngine) -> String {
