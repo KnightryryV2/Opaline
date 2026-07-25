@@ -76,6 +76,10 @@ extension VideoPlayerView {
 
     @objc
     func appDidBecomeActive() {
+        if let engine, engine.videoLayer != nil {
+            restoreSampleBufferVideo(engine)
+            return
+        }
         guard let player else {
             return
         }
@@ -84,6 +88,27 @@ extension VideoPlayerView {
         }
         // Re-evaluate the PiP setting (it may have changed in Settings).
         setupPiP()
+    }
+
+    /// Sample-buffer path: audio survives backgrounding (the audio renderer
+    /// keeps running under the audio session) but `AVSampleBufferDisplayLayer`
+    /// stops rendering and comes back empty — sound with no picture. Nothing
+    /// above re-enqueues it, because every other line here targets
+    /// `AVPlayerLayer`, which this path doesn't use.
+    ///
+    /// Seeking to the current position is the cheap kick: it flushes the
+    /// renderers and re-enqueues from the containing segment's keyframe
+    /// through the engine's existing preroll, so a paused player also gets a
+    /// visible frame back instead of black. Costs the usual segment-boundary
+    /// snap (playback may rewind a few seconds); a frame-exact re-enqueue
+    /// would need an engine-level "re-render at current time" that doesn't
+    /// move the clock.
+    private func restoreSampleBufferVideo(_ engine: PlayerEngine) {
+        let now = engine.currentTime
+        guard now.isNumeric else {
+            return
+        }
+        engine.seek(to: now)
     }
 
     @objc

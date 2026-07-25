@@ -64,6 +64,15 @@ protocol PlayerEngine: AnyObject {
         using block: @escaping (CMTime) -> Void
     ) -> Any
     func removeTimeObserver(_ token: Any)
+
+    /// Stops everything driving this engine — fetches, decode loops,
+    /// `requestMediaDataWhenReady` registrations — so an engine that's being
+    /// discarded (as opposed to backgrounded for later resume) stops
+    /// consuming CPU/network the instant it's known to be unwanted. Called by
+    /// `VideoPlayerView.detach()`. Idempotent. Default no-op: `AVPlayerEngine`
+    /// has nothing of its own to stop — ARC tears down its `AVPlayer` (and
+    /// whatever `AVPlayerItem` it holds) when the last reference drops.
+    func teardown()
 }
 
 extension PlayerEngine {
@@ -71,6 +80,7 @@ extension PlayerEngine {
     var isPlaying: Bool { rate > 0 }
     /// nil by default — only sample-buffer-backed engines own a layer.
     var videoLayer: CALayer? { nil }
+    func teardown() {}
 
     func seek(to time: CMTime) {
         seek(

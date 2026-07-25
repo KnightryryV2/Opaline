@@ -50,6 +50,13 @@ extension SampleBufferEngine {
         anchorSeconds = anchor
         clockRunning = false
         videoEnqueuedAny = false
+        // A starvation park may already be pending from just before the seek;
+        // it would no-op against the now-parked clock anyway (see
+        // `parkClockIfStillStarving`'s `clockRunning` guard), but cancelling
+        // lets a fresh one be scheduled immediately if the new position
+        // starves too, instead of waiting out the old debounce window.
+        pendingParkWorkItem?.cancel()
+        pendingParkWorkItem = nil
         synchronizer.setRate(
             0,
             time: CMTime(seconds: anchor, preferredTimescale: 600)

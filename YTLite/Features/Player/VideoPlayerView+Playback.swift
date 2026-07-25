@@ -37,7 +37,11 @@ extension VideoPlayerView {
         playerLayer.player = nil
         if sampleBufferLayer !== videoLayer {
             sampleBufferLayer?.removeFromSuperlayer()
-            layer.addSublayer(videoLayer)
+            // Directly above `playerLayer`, NOT on top of everything:
+            // `addSublayer` would stack it over the gradients and every
+            // control subview's layer (all added earlier in `performSetup`),
+            // hiding the whole player UI behind the video.
+            layer.insertSublayer(videoLayer, above: playerLayer)
             sampleBufferLayer = videoLayer
         }
         updateSampleBufferLayerFrame()
@@ -72,6 +76,11 @@ extension VideoPlayerView {
         engine?.onRateChange = nil
         engine?.onStateChange = nil
         engine?.onDurationResolved = nil
+        // Only ever called on an engine that's being thrown away — the
+        // video-to-video background-resume path saves its engine in
+        // `savedEngineForBackground` and rebinds it via `rebind(engine:)`
+        // instead of calling `detach()`. See `PlayerEngine.teardown()`.
+        engine?.teardown()
         clockResync.isStalled = false
         clockResync.workItem?.cancel()
         clockResync.workItem = nil
