@@ -10,6 +10,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private let dependencies = AppDependencies.live()
     /// Built during the splash, handed over by `showMain`.
     private var preloadedMain: UIViewController?
+    /// A `ytlite://` or youtube.com link that arrived while the splash or
+    /// auth screen was still up — replayed once `showMain` puts the tab
+    /// bar on screen. See `AppDelegate+DeepLink.swift`.
+    var pendingDeepLink: String?
 
     func application(
         _ application: UIApplication,
@@ -199,6 +203,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         window?.rootViewController = preloadedMain
             ?? makeMain(dependencies: dependencies)
         preloadedMain = nil
+        replayPendingDeepLinkIfNeeded()
     }
 
     /// Constructs the tab bar and forces the first screen through a full
