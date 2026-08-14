@@ -57,6 +57,17 @@ extension SearchViewController {
         }
     }
 
+    /// History is the resting state of an empty search screen: it shows
+    /// without waiting for the field to take focus, and comes back when the
+    /// user dismisses the keyboard without searching.
+    func showHistoryIfIdle() {
+        guard results.isEmpty else {
+            setPanel(.hidden)
+            return
+        }
+        setPanel(searchHistory.queries.isEmpty ? .hidden : .history)
+    }
+
     /// Row tap in the panel: fill the bar and run the search.
     func executePanelQuery(_ query: String) {
         searchBar.text = query

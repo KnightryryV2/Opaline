@@ -54,6 +54,7 @@ class SearchViewController: UIViewController {
         setupSearchBar()
         setupTableView()
         applyTheme()
+        showHistoryIfIdle()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(applyTheme),
@@ -177,7 +178,7 @@ extension SearchViewController: UISearchBarDelegate {
 
     func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
         searchBar.setShowsCancelButton(false, animated: true)
-        setPanel(.hidden)
+        showHistoryIfIdle()
     }
 
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
