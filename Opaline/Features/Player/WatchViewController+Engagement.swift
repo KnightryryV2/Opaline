@@ -3,6 +3,22 @@ import UIKit
 // MARK: - Engagement & Actions
 
 extension WatchViewController {
+    override func viewWillDisappear(
+        _ animated: Bool
+    ) {
+        super.viewWillDisappear(animated)
+        let isDismissing = isMovingFromParent
+            || isBeingDismissed
+            || navigationController?.isBeingDismissed == true
+        if isDismissing {
+            pageLoadToken.cancel()
+            videoPlayerView?.player?.pause()
+            // Closing the player ends the night: the dim belongs to it, and a
+            // timer with nothing left to pause is just a dark screen.
+            SleepTimer.shared.cancel()
+        }
+    }
+
     // MARK: - App Lifecycle
 
     @objc

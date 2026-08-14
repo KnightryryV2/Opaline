@@ -472,3 +472,11 @@
 "settings.thumbnailQuality.high" = "Élevée (640×360)";
 "settings.thumbnailQuality.maximum" = "Maximale (1280×720)";
 "settings.footer.thumbnailQuality" = "Le mode auto choisit le niveau selon la mémoire de votre appareil. Plus la qualité est élevée, plus les téléchargements et la mémoire utilisée par miniature augmentent, ce qui peut ralentir le défilement sur les appareils avec peu de RAM.";
+
+/* Sleep timer (#44) */
+"player.sleepTimer" = "Délai de mise en veille";
+"settings.row.sleepTimerDuration" = "Arrêter la lecture après";
+"settings.row.sleepTimerDim" = "Assombrir l'écran de";
+"settings.minutesCount" = "%d min";
+"settings.percentValue" = "%d %%";
+"settings.footer.sleepTimer" = "Le bouton lune du lecteur assombrit l'écran et lance le compte à rebours. À la fin, la lecture s'arrête ; appuyez à nouveau pour annuler. Dans les deux cas, la luminosité est rétablie.";

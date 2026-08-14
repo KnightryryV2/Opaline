@@ -387,3 +387,11 @@
 "settings.thumbnailQuality.high" = "Висока (640×360)";
 "settings.thumbnailQuality.maximum" = "Максимальна (1280×720)";
 "settings.footer.thumbnailQuality" = "У режимі «Авто» рівень обирається за обсягом памʼяті пристрою. Що вища якість, то більше завантаження та витрати памʼяті на кожну обкладинку — на пристроях з малим обсягом ОЗП це може сповільнювати прокручування.";
+
+/* Sleep timer (#44) */
+"player.sleepTimer" = "Таймер сну";
+"settings.row.sleepTimerDuration" = "Зупинити відтворення через";
+"settings.row.sleepTimerDim" = "Затемнити екран на";
+"settings.minutesCount" = "%d хв";
+"settings.percentValue" = "%d%%";
+"settings.footer.sleepTimer" = "Кнопка з місяцем у плеєрі затемнює екран і запускає відлік. Коли час мине, відтворення зупиниться; повторне натискання скасовує таймер. Яскравість у будь-якому разі повернеться.";

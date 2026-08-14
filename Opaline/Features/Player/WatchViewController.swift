@@ -270,19 +270,6 @@ final class WatchViewController: UIViewController {
         adjustForFloatingNavBar()
     }
 
-    override func viewWillDisappear(
-        _ animated: Bool
-    ) {
-        super.viewWillDisappear(animated)
-        let isDismissing = isMovingFromParent
-            || isBeingDismissed
-            || navigationController?.isBeingDismissed == true
-        if isDismissing {
-            pageLoadToken.cancel()
-            videoPlayerView?.player?.pause()
-        }
-    }
-
     // MARK: - Deinitializer
 
     deinit {
@@ -296,5 +283,6 @@ final class WatchViewController: UIViewController {
         }
         videoPlayerView?.detach()
         playbackFacade.reset()
+        SleepTimer.shared.cancel()
     }
 }

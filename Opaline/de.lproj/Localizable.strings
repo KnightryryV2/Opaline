@@ -474,3 +474,11 @@
 "settings.thumbnailQuality.high" = "Hoch (640×360)";
 "settings.thumbnailQuality.maximum" = "Maximal (1280×720)";
 "settings.footer.thumbnailQuality" = "„Auto“ wählt die Stufe anhand des Arbeitsspeichers deines Geräts. Höhere Qualität bedeutet größere Downloads und mehr Speicher pro Vorschaubild, was das Scrollen auf Geräten mit wenig RAM verlangsamen kann.";
+
+/* Sleep timer (#44) */
+"player.sleepTimer" = "Ruhemodus-Timer";
+"settings.row.sleepTimerDuration" = "Wiedergabe beenden nach";
+"settings.row.sleepTimerDim" = "Bildschirm abdunkeln um";
+"settings.minutesCount" = "%d Min.";
+"settings.percentValue" = "%d %%";
+"settings.footer.sleepTimer" = "Der Mond-Button im Player dunkelt den Bildschirm ab und startet den Countdown. Läuft er ab, wird die Wiedergabe beendet; ein erneutes Tippen bricht ab. Die Helligkeit wird in beiden Fällen wiederhergestellt.";

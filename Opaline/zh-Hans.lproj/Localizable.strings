@@ -476,3 +476,11 @@
 "settings.thumbnailQuality.high" = "高 (640×360)";
 "settings.thumbnailQuality.maximum" = "最高 (1280×720)";
 "settings.footer.thumbnailQuality" = "“自动”会根据设备的内存大小选择画质。画质越高，下载的数据和每张缩略图占用的内存就越多，在内存较小的设备上可能会导致滚动变慢。";
+
+/* Sleep timer (#44) */
+"player.sleepTimer" = "休眠定时器";
+"settings.row.sleepTimerDuration" = "停止播放前的时长";
+"settings.row.sleepTimerDim" = "屏幕变暗程度";
+"settings.minutesCount" = "%d 分钟";
+"settings.percentValue" = "%d%%";
+"settings.footer.sleepTimer" = "点按播放器中的月亮按钮即可调暗屏幕并开始倒计时。倒计时结束后播放会停止；再次点按可取消。无论哪种情况，屏幕亮度都会恢复。";

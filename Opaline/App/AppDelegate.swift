@@ -16,6 +16,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         configureServices(application)
+        // A previous run may have been killed with the screen dimmed by the
+        // sleep timer; nothing else would ever give the brightness back.
+        SleepTimer.shared.restoreBrightnessAfterUncleanExit()
         // The player has to know how the phone is held the moment it opens —
         // too late to start asking then.
         HeldOrientation.startTracking()

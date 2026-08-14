@@ -476,3 +476,11 @@
 "settings.thumbnailQuality.high" = "Yüksek (640×360)";
 "settings.thumbnailQuality.maximum" = "En yüksek (1280×720)";
 "settings.footer.thumbnailQuality" = "Otomatik seçenek, düzeyi cihazınızın bellek miktarına göre belirler. Kalite arttıkça indirilen veri ve her küçük resmin kullandığı bellek de artar; bu da az RAM'e sahip cihazlarda kaydırmayı yavaşlatabilir.";
+
+/* Sleep timer (#44) */
+"player.sleepTimer" = "Uyku modu zamanlayıcı";
+"settings.row.sleepTimerDuration" = "Şu Süre Sonra Oynatmayı Durdur";
+"settings.row.sleepTimerDim" = "Ekranı Şu Kadar Karart";
+"settings.minutesCount" = "%d dk.";
+"settings.percentValue" = "%%%d";
+"settings.footer.sleepTimer" = "Oynatıcıdaki ay düğmesi ekranı karartır ve geri sayımı başlatır. Süre dolduğunda oynatma durur; düğmeye tekrar dokunmak zamanlayıcıyı iptal eder. Her iki durumda da parlaklık eski haline döner.";

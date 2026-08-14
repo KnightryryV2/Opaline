@@ -390,3 +390,11 @@
 "settings.thumbnailQuality.high" = "Cao (640×360)";
 "settings.thumbnailQuality.maximum" = "Tối đa (1280×720)";
 "settings.footer.thumbnailQuality" = "Chế độ tự động chọn mức dựa trên dung lượng bộ nhớ của thiết bị. Chất lượng cao hơn nghĩa là dung lượng tải xuống lớn hơn và mỗi hình thu nhỏ chiếm nhiều bộ nhớ hơn, điều này có thể làm chậm việc lướt trên các thiết bị có ít RAM.";
+
+/* Sleep timer (#44) */
+"player.sleepTimer" = "Hẹn giờ ngủ";
+"settings.row.sleepTimerDuration" = "Dừng phát sau";
+"settings.row.sleepTimerDim" = "Làm tối màn hình";
+"settings.minutesCount" = "%d phút";
+"settings.percentValue" = "%d%%";
+"settings.footer.sleepTimer" = "Nút mặt trăng trong trình phát sẽ làm tối màn hình và bắt đầu đếm ngược. Khi hết giờ, quá trình phát sẽ dừng lại; nhấn lại vào nút để hủy. Dù thế nào thì độ sáng của bạn cũng sẽ được khôi phục.";

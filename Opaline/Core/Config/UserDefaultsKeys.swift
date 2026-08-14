@@ -86,6 +86,11 @@ enum UserDefaultsKeys {
         static let pipEnabled = "player_pipEnabled"
         static let hideStatusBarInFullscreen = "player_hideStatusBarFullscreen"
         static let autoZoomToFill = "player_autoZoomToFill"
+        /// Sleep timer (#44): minutes until playback stops, how far to dim,
+        /// and the brightness to put back if the app dies while dimmed.
+        static let sleepTimerMinutes = "player_sleepTimerMinutes"
+        static let sleepDimLevel = "player_sleepDimLevel"
+        static let sleepBrightnessBackup = "player_sleepBrightnessBackup"
     }
 
     enum AutoDub {

@@ -89,6 +89,7 @@ final class VideoPlayerView: UIView {
     let ccButton = UIButton(type: .system)
     let speedButton = UIButton(type: .system)
     let audioOnlyButton = UIButton(type: .system)
+    let sleepButton = UIButton(type: .system)
     var pipController: AVPictureInPictureController?
     let rewindButton = UIButton(type: .system)
     let playPauseButton = UIButton(type: .system)
@@ -108,6 +109,10 @@ final class VideoPlayerView: UIView {
         overlay.isUserInteractionEnabled = false
         return overlay
     }()
+
+    /// Sleep-timer dim. Its own layer, below the controls: `dimView` lives
+    /// inside `controlsView`, which fades out with the controls.
+    let nightDimView = UIView()
 
     // MARK: - SponsorBlock
 

@@ -24,7 +24,7 @@ extension VideoPlayerView {
 
     private func addControlFeedback() {
         for button in [
-            settingsButton, pipButton, ccButton, speedButton, audioOnlyButton,
+            settingsButton, pipButton, ccButton, speedButton, audioOnlyButton, sleepButton,
             rewindButton, playPauseButton, forwardButton,
             fullscreenButton, skipButton
         ] {
@@ -121,6 +121,7 @@ extension VideoPlayerView {
             )
         ])
         setupDimOverlay()
+        setupNightDim()
         setupSpinner()
         setupSkipButtonTarget()
         setupTopBar()
@@ -197,6 +198,7 @@ extension VideoPlayerView {
         configureCCButton()
         configureSpeedButton()
         configureAudioOnlyButton()
+        configureSleepButton()
         activateTopBarConstraints()
     }
 

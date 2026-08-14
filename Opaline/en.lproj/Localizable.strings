@@ -505,3 +505,12 @@
 "settings.thumbnailQuality.high" = "High (640×360)";
 "settings.thumbnailQuality.maximum" = "Maximum (1280×720)";
 "settings.footer.thumbnailQuality" = "Auto picks a level from the amount of memory your device has. Higher quality means larger downloads and more memory per thumbnail, which can slow scrolling on devices with little RAM.";
+
+/* Sleep timer (#44): the player's moon button dims the screen and
+   stops playback when the time runs out. %d = minutes / percent. */
+"player.sleepTimer" = "Sleep timer";
+"settings.row.sleepTimerDuration" = "Stop Playback After";
+"settings.row.sleepTimerDim" = "Dim Screen By";
+"settings.minutesCount" = "%d min";
+"settings.percentValue" = "%d%%";
+"settings.footer.sleepTimer" = "The moon button in the player dims the screen and starts the countdown. Playback stops when it runs out; tapping the button again cancels it. Your brightness is restored either way.";

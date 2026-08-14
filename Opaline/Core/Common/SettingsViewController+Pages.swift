@@ -103,6 +103,11 @@ extension SettingsViewController {
                 ]
             ),
             Section(
+                header: "player.sleepTimer".localized,
+                footer: "settings.footer.sleepTimer".localized,
+                rows: [.sleepTimerMinutes, .sleepTimerDim]
+            ),
+            Section(
                 header: "settings.section.ryd".localized,
                 footer: "settings.footer.ryd".localized,
                 rows: [.rydEnabled]

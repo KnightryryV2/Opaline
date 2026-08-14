@@ -387,3 +387,11 @@
 "settings.thumbnailQuality.high" = "Высокое (640×360)";
 "settings.thumbnailQuality.maximum" = "Максимальное (1280×720)";
 "settings.footer.thumbnailQuality" = "В режиме «Авто» уровень выбирается по объёму памяти устройства. Чем выше качество, тем больше загрузка и расход памяти на каждую обложку — на устройствах с малым объёмом ОЗУ это может замедлять прокрутку.";
+
+/* Sleep timer (#44) */
+"player.sleepTimer" = "Автовыключение";
+"settings.row.sleepTimerDuration" = "Остановить воспроизведение через";
+"settings.row.sleepTimerDim" = "Затемнить экран на";
+"settings.minutesCount" = "%d мин.";
+"settings.percentValue" = "%d%%";
+"settings.footer.sleepTimer" = "Кнопка с луной в плеере затемняет экран и запускает отсчёт. Когда время выйдет, воспроизведение остановится; повторное нажатие отменяет таймер. Яркость в любом случае вернётся к прежней.";

@@ -472,3 +472,11 @@
 "settings.thumbnailQuality.high" = "Alta (640×360)";
 "settings.thumbnailQuality.maximum" = "Máxima (1280×720)";
 "settings.footer.thumbnailQuality" = "O modo automático escolhe o nível conforme a memória do seu dispositivo. Mais qualidade significa downloads maiores e mais memória por miniatura, o que pode deixar a rolagem mais lenta em dispositivos com pouca RAM.";
+
+/* Sleep timer (#44) */
+"player.sleepTimer" = "Timer de suspensão";
+"settings.row.sleepTimerDuration" = "Parar a reprodução após";
+"settings.row.sleepTimerDim" = "Escurecer a tela em";
+"settings.minutesCount" = "%dmin";
+"settings.percentValue" = "%d%%";
+"settings.footer.sleepTimer" = "O botão de lua no player escurece a tela e inicia a contagem regressiva. Quando ela termina, a reprodução para; tocar no botão de novo cancela. Nos dois casos o brilho é restaurado.";

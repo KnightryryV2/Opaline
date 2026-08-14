@@ -472,3 +472,11 @@
 "settings.thumbnailQuality.high" = "Alta (640×360)";
 "settings.thumbnailQuality.maximum" = "Massima (1280×720)";
 "settings.footer.thumbnailQuality" = "La modalità automatica sceglie il livello in base alla memoria del dispositivo. Una qualità più alta comporta download più pesanti e più memoria per ogni miniatura, il che può rallentare lo scorrimento sui dispositivi con poca RAM.";
+
+/* Sleep timer (#44) */
+"player.sleepTimer" = "Timer di sospensione";
+"settings.row.sleepTimerDuration" = "Interrompi la riproduzione dopo";
+"settings.row.sleepTimerDim" = "Attenua lo schermo del";
+"settings.minutesCount" = "%d m";
+"settings.percentValue" = "%d%%";
+"settings.footer.sleepTimer" = "Il pulsante con la luna nel player attenua lo schermo e avvia il conto alla rovescia. Allo scadere la riproduzione si interrompe; toccandolo di nuovo il timer viene annullato. In entrambi i casi la luminosità viene ripristinata.";

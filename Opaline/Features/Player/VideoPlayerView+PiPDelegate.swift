@@ -9,6 +9,9 @@ extension VideoPlayerView: AVPictureInPictureControllerDelegate {
     ) {
         pipTrace("delegate: willStart")
         pipIsStarting = true
+        // The video leaves our view for a floating window over whatever the
+        // user does next — the timer keeps running, the dim does not.
+        SleepTimer.shared.suspendDim()
         pipButton.setImage(
             PlayerIcons.pipExit(),
             for: .normal
@@ -39,6 +42,7 @@ extension VideoPlayerView: AVPictureInPictureControllerDelegate {
             player?.pause()
         }
         pipIsRestoring = false
+        SleepTimer.shared.syncDim()
         pipButton.setImage(
             PlayerIcons.pip(),
             for: .normal

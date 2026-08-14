@@ -12,6 +12,7 @@ final class SettingsViewController: UIViewController {
         case quality, backgroundPlayback, pipEnabled, hideStatusBar
         case showShorts, shortsPlayer, shortsGrouping
         case autoZoomToFill
+        case sleepTimerMinutes, sleepTimerDim
         case autoplayEnabled, autoplayMixEnabled
         case autoDubEnabled, autoDubLanguage, autoDubIgnoreAI
         case homeLayout, defaultTab
@@ -244,6 +245,16 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             ) {
                 UserDefaults.standard.set($0, forKey: key)
             }
+        case .sleepTimerMinutes:
+            return makeDisclosureCell(
+                "settings.row.sleepTimerDuration".localized,
+                value: "settings.minutesCount".localized(with: SleepTimer.minutes)
+            )
+        case .sleepTimerDim:
+            return makeDisclosureCell(
+                "settings.row.sleepTimerDim".localized,
+                value: "settings.percentValue".localized(with: SleepTimer.dimLevel)
+            )
         case .showShorts:
             return makeShowShortsCell()
         case .shortsPlayer:
@@ -393,7 +404,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             handleDebugSelection, handleThemeSelection,
             handleLanguageSelection, handleAutoDubSelection,
             handleNotificationsSelection, handleAboutSelection,
-            handleGeneralSelection
+            handleSleepSelection, handleGeneralSelection
         ]
         _ = handlers.first { $0(row) }
     }
