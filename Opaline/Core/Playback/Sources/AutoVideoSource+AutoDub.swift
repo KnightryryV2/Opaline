@@ -37,6 +37,7 @@ extension AutoVideoSource {
             AppLog.player(
                 "auto: \(primary.kind) failed (\(error)), falling back"
             )
+            PlaybackProgress.step("player.status.tryingFallback")
             loadFallback(
                 videoId: videoId,
                 cancellation: cancellation,
@@ -105,6 +106,7 @@ extension AutoVideoSource {
         switch result {
         case .success:
             if let fallback {
+                primary.releaseResources()
                 active = fallback
             }
             completion(result)

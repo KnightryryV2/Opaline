@@ -14,6 +14,8 @@ enum VideoSourceKind {
     /// factory input — a playing source always reports a concrete kind.
     case auto
     case androidVR
+    /// Signed-in living-room client, played over SABR.
+    case tv
     case progressive
     case mwebPot
 }
@@ -94,14 +96,23 @@ protocol VideoSource: AnyObject {
     )
 
     /// Switches quality; the source rebuilds playback its own way.
+    ///
+    /// `resumeAt` is where the player currently stands. Sources that refetch
+    /// by URL can ignore it — the shell seeks after attaching — but a source
+    /// that streams sequentially needs it, or it fetches from the start of the
+    /// video while the player waits for the middle.
     func selectQuality(
         _ quality: VideoQuality,
+        resumeAt: Double?,
         completion: @escaping (Result<PreparedPlayback, Error>) -> Void
     )
 
     /// Switches the audio track; the source rebuilds playback its own way.
+    /// `resumeAt` means what it does for [[selectQuality]] — a sequential
+    /// source (SABR) has to re-open its session at the playhead.
     func selectAudioTrack(
         _ track: AudioTrack,
+        resumeAt: Double?,
         completion: @escaping (Result<PreparedPlayback, Error>) -> Void
     )
 
@@ -112,6 +123,12 @@ protocol VideoSource: AnyObject {
         videoId: String,
         completion: @escaping ([AudioTrack]) -> Void
     )
+
+    /// Drops whatever this source is holding for playback that is no longer
+    /// on screen. A composite keeps every inner source alive for the whole
+    /// video, so without this a SABR session — its socket, its server and its
+    /// buffer — would outlive the switch to another source.
+    func releaseResources()
 }
 
 extension VideoSource {
@@ -123,8 +140,24 @@ extension VideoSource {
     var availableAudioTracks: [AudioTrack] { [] }
     var currentAudioTrack: AudioTrack? { nil }
 
+    /// Convenience for callers with no playhead to offer.
+    func selectQuality(
+        _ quality: VideoQuality,
+        completion: @escaping (Result<PreparedPlayback, Error>) -> Void
+    ) {
+        selectQuality(quality, resumeAt: nil, completion: completion)
+    }
+
     func selectAudioTrack(
         _ track: AudioTrack,
+        completion: @escaping (Result<PreparedPlayback, Error>) -> Void
+    ) {
+        selectAudioTrack(track, resumeAt: nil, completion: completion)
+    }
+
+    func selectAudioTrack(
+        _ track: AudioTrack,
+        resumeAt: Double?,
         completion: @escaping (Result<PreparedPlayback, Error>) -> Void
     ) {
         completion(.failure(NSError(
@@ -143,6 +176,10 @@ extension VideoSource {
     ) {
         completion([])
     }
+
+    /// Nothing to release by default — only delivery-backed sources hold
+    /// anything between plays.
+    func releaseResources() {}
 }
 
 /// Creates the right `VideoSource` for a kind (abstract factory).

@@ -159,14 +159,19 @@ extension SettingsViewController {
     }
 
     private var debugSections: [Section] {
-        [
+        var rows: [Row] = [.playbackSource]
+        // Only shown for sources that actually have two ways to fetch bytes.
+        if PlaybackSource.selected.supportsDeliveryChoice {
+            rows.append(.streamDelivery)
+        }
+        rows.append(contentsOf: [
+            .resetIdentity, .solverEndpoint, .mainThreadWatchdog, .shareLog
+        ])
+        return [
             Section(
                 header: nil,
                 footer: "settings.footer.debug".localized,
-                rows: [
-                    .playbackSource, .solverEndpoint,
-                    .mainThreadWatchdog, .shareLog
-                ]
+                rows: rows
             )
         ]
     }

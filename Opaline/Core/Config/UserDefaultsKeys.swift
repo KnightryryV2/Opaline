@@ -88,6 +88,12 @@ enum UserDefaultsKeys {
         static let autoZoomToFill = "player_autoZoomToFill"
     }
 
+    enum Playback {
+        /// The made-up television id the TV client presents once and keeps;
+        /// its proof-of-origin token is bound to this exact string.
+        static let livingRoomPoTokenId = "playback_livingRoomPoTokenId"
+    }
+
     enum AutoDub {
         static let enabled = "autoDub_enabled"
         static let ignoreAIDubs = "autoDub_ignoreAIDubs"
@@ -109,6 +115,7 @@ enum UserDefaultsKeys {
 
     enum Debug {
         static let playbackSource = "debug_playbackSource"
+        static let streamDelivery = "debug_streamDelivery"
         static let serverBaseURL = "debug_serverBaseURL"
         static let mainThreadWatchdog = "debug_mainThreadWatchdog"
     }
@@ -131,9 +138,12 @@ enum UserDefaultsKeys {
 
 // MARK: - PlaybackSource
 
+/// Case order is the order of the picker: the working sources first, the
+/// broken one last.
 enum PlaybackSource: String, CaseIterable {
     case auto = "auto"
     case androidVR = "android_vr"
+    case tv = "tv"
     case progressive = "progressive"
     case mwebPot = "mweb_pot"
 
@@ -148,13 +158,30 @@ enum PlaybackSource: String, CaseIterable {
     var displayName: String {
         switch self {
         case .auto:
-            return "Auto (Android VR, mweb fallback)"
+            return "Auto (Android VR, TV fallback)"
         case .androidVR:
             return "Android VR (fast)"
         case .progressive:
             return "Progressive (360p)"
         case .mwebPot:
-            return "Mobile Web + pot (kids/dubbed)"
+            return "Mobile Web + pot (broken)"
+        case .tv:
+            return "TV (signed in, SABR)"
+        }
+    }
+
+    /// Whether this source has a choice of delivery at all.
+    ///
+    /// Only the android_vr path has two ways to fetch its bytes. Progressive
+    /// plays a single muxed URL, and mweb is built around its own pot-bound
+    /// URLs — neither has anything to switch between.
+    var supportsDeliveryChoice: Bool {
+        switch self {
+        case .auto, .androidVR:
+            return true
+        // TV serves no stream URLs at all — SABR is its only delivery.
+        case .progressive, .mwebPot, .tv:
+            return false
         }
     }
 
@@ -168,6 +195,39 @@ enum PlaybackSource: String, CaseIterable {
             return .progressive
         case .mwebPot:
             return .mwebPot
+        case .tv:
+            return .tv
+        }
+    }
+}
+
+// MARK: - StreamDeliveryPreference
+
+/// How playback should fetch its bytes, when the user wants a say.
+///
+/// `auto` is the shipping behaviour: the source picks per response — byte
+/// ranges while formats carry URLs, SABR when they do not, each falling back
+/// to the other. The explicit options pin one delivery and disable the
+/// fallback, which is what makes them useful for testing: a failure stays a
+/// failure instead of being papered over.
+enum StreamDeliveryPreference: String, CaseIterable {
+    case automatic = "auto"
+    case byteRange = "range"
+    case sabrOnly = "sabr"
+
+    static var selected: StreamDeliveryPreference {
+        UserDefaults.standard.string(forKey: UserDefaultsKeys.Debug.streamDelivery)
+            .flatMap(StreamDeliveryPreference.init) ?? .automatic
+    }
+
+    var displayName: String {
+        switch self {
+        case .automatic:
+            return "Auto (by response)"
+        case .byteRange:
+            return "Byte ranges only"
+        case .sabrOnly:
+            return "SABR only"
         }
     }
 }
